@@ -20,7 +20,7 @@ import { UICompBuilder, withDefault } from "../../generators";
 import { CommonNameConfig, depsConfig, withExposingConfigs } from "../../generators/withExposing";
 import { formDataChildren, FormDataPropertyView } from "../formComp/formDataConstants";
 import { styleControl } from "comps/controls/styleControl";
-import { DateTimeStyle, DateTimeStyleType } from "comps/controls/styleControlConstants";
+import {  AnimationStyle, DateTimeStyle, DateTimeStyleType, InputFieldStyle, LabelStyle } from "comps/controls/styleControlConstants";
 import { withMethodExposing } from "../../generators/withMethodExposing";
 import {
   disabledPropertyView,
@@ -50,6 +50,11 @@ import { DateRangeUIView } from "comps/comps/dateComp/dateRangeUIView";
 
 import { EditorContext } from "comps/editorState";
 
+const defaultStyle = {
+  borderStyle: 'solid',
+  borderWidth: '1px',
+}
+
 const EventOptions = [changeEvent, focusEvent, blurEvent] as const;
 
 const validationChildren = {
@@ -71,10 +76,13 @@ const commonChildren = {
   hourStep: RangeControl.closed(1, 24, 1),
   minuteStep: RangeControl.closed(1, 60, 1),
   secondStep: RangeControl.closed(1, 60, 1),
-  style: styleControl(DateTimeStyle),
+  style: withDefault(styleControl(InputFieldStyle),{background:'transparent'}),
+  animationStyle: styleControl(AnimationStyle),
+  labelStyle: styleControl(LabelStyle.filter((style) => ['accent', 'validate'].includes(style.name) === false)),
   suffixIcon: withDefault(IconControl, "/icon:regular/calendar"),
   ...validationChildren,
   viewRef: RefControl<CommonPickerMethods>,
+  inputFieldStyle: withDefault(styleControl(DateTimeStyle), defaultStyle),
 };
 type CommonChildrenType = RecordConstructorToComp<typeof commonChildren>;
 
@@ -112,6 +120,7 @@ const timeValidationFields = (children: CommonChildrenType, dateType: PickerMode
 function validate(
   props: RecordConstructorToView<typeof validationChildren> & {
     value: { value: string };
+    showTime: boolean;
   }
 ): {
   validateStatus: "success" | "warning" | "error";
@@ -120,10 +129,9 @@ function validate(
   if (props.customRule) {
     return { validateStatus: "error", help: props.customRule };
   }
+  const currentDateTime = dayjs(props.value.value, DateParser);
 
-  const currentDateTime = dayjs(props.value.value, DATE_TIME_FORMAT);
-
-  if (props.required && !currentDateTime.isValid()) {
+  if (props.required && (props.value.value === '' || !currentDateTime.isValid())) {
     return { validateStatus: "error", help: trans("prop.required") };
   }
 
@@ -158,24 +166,28 @@ export type DateCompViewProps = Pick<
 };
 
 export const datePickerControl = new UICompBuilder(childrenMap, (props) => {
-  let time = dayjs(null);
-  if(props.value.value !== '') {
+  let time = null;
+  if (props.value.value !== '') {
     time = dayjs(props.value.value, DateParser);
   }
+
   return props.label({
     required: props.required,
     style: props.style,
+    labelStyle: props.labelStyle,
+    inputFieldStyle:props.inputFieldStyle,
+    animationStyle:props.animationStyle,
     children: (
       <DateUIView
         viewRef={props.viewRef}
         disabledTime={() => disabledTime(props.minTime, props.maxTime)}
-        $style={props.style}
+        $style={props.inputFieldStyle}
         disabled={props.disabled}
         {...datePickerProps(props)}
         minDate={props.minDate}
         maxDate={props.maxDate}
         placeholder={props.placeholder}
-        value={time.isValid() ? time : null}
+        value={time?.isValid() ? time : null}
         onChange={(time) => {
           handleDateChange(
             time && time.isValid()
@@ -212,11 +224,11 @@ export const datePickerControl = new UICompBuilder(childrenMap, (props) => {
 
         {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
           <><Section name={sectionNames.validation}>
-              {requiredPropertyView(children)}
-              {dateValidationFields(children)}
-              {timeValidationFields(children)}
-              {children.customRule.propertyView({})}
-            </Section>
+            {requiredPropertyView(children)}
+            {dateValidationFields(children)}
+            {timeValidationFields(children)}
+            {children.customRule.propertyView({})}
+          </Section>
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {disabledPropertyView(children)}
@@ -234,9 +246,9 @@ export const datePickerControl = new UICompBuilder(childrenMap, (props) => {
             {children.placeholder.propertyView({ label: trans("date.placeholderText") })}
           </Section>
         )}
-        
+
         {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
-           <><Section name={sectionNames.advanced}>
+          <><Section name={sectionNames.advanced}>
             {timeFields(children, isMobile)}
             {children.suffixIcon.propertyView({ label: trans("button.suffixIcon") })}
           </Section></>
@@ -244,9 +256,20 @@ export const datePickerControl = new UICompBuilder(childrenMap, (props) => {
         {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && !isMobile && commonAdvanceSection(children)}
 
         {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
-          <Section name={sectionNames.style}>
-            {children.style.getPropertyView()}
-          </Section>
+          <>
+            <Section name={sectionNames.style}>
+              {children.style.getPropertyView()}
+            </Section>
+            <Section name={sectionNames.labelStyle}>
+              {children.labelStyle.getPropertyView()}
+            </Section>
+            <Section name={sectionNames.inputFieldStyle}>
+              {children.inputFieldStyle.getPropertyView()}
+            </Section>
+            <Section name={sectionNames.animationStyle} hasTooltip={true}>
+              {children.animationStyle.getPropertyView()}
+            </Section>
+          </>
         )}
       </>
     );
@@ -262,23 +285,24 @@ export const dateRangeControl = (function () {
   };
 
   return new UICompBuilder(childrenMap, (props) => {
-    let start = dayjs(null);
-    let end = dayjs(null);
-    if(props.start.value !== '') {
+    let start = null;
+    let end = null;
+    if (props.start.value !== '') {
       start = dayjs(props.start.value, DateParser);
     }
-    if(props.end.value !== '') {
+
+    if (props.end.value !== '') {
       end = dayjs(props.end.value, DateParser);
     }
 
     const children = (
       <DateRangeUIView
         viewRef={props.viewRef}
-        $style={props.style}
+        $style={props.inputFieldStyle}
         disabled={props.disabled}
         {...datePickerProps(props)}
-        start={start.isValid() ? start : null}
-        end={end.isValid() ? end : null}
+        start={start?.isValid() ? start : null}
+        end={end?.isValid() ? end : null}
         minDate={props.minDate}
         maxDate={props.maxDate}
         placeholder={[props.placeholder, props.placeholder]}
@@ -310,12 +334,14 @@ export const dateRangeControl = (function () {
     return props.label({
       required: props.required,
       style: props.style,
+      labelStyle:props.labelStyle,
       children: children,
+      inputFieldStyle:props.inputFieldStyle,
       ...(startResult.validateStatus !== "success"
         ? startResult
         : endResult.validateStatus !== "success"
-        ? endResult
-        : startResult),
+          ? endResult
+          : startResult),
     });
   })
     .setPropertyViewFn((children) => {
@@ -337,11 +363,11 @@ export const dateRangeControl = (function () {
 
           {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
             <><Section name={sectionNames.validation}>
-                {requiredPropertyView(children)}
-                {dateValidationFields(children)}
-                {timeValidationFields(children)}
-                {children.customRule.propertyView({})}
-              </Section>
+              {requiredPropertyView(children)}
+              {dateValidationFields(children)}
+              {timeValidationFields(children)}
+              {children.customRule.propertyView({})}
+            </Section>
               <Section name={sectionNames.interaction}>
                 {children.onEvent.getPropertyView()}
                 {disabledPropertyView(children)}
@@ -358,7 +384,7 @@ export const dateRangeControl = (function () {
               {children.placeholder.propertyView({ label: trans("date.placeholderText") })}
             </Section>
           )}
-          
+
           {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
             <><Section name={sectionNames.advanced}>
               {timeFields(children, isMobile)}
@@ -368,9 +394,17 @@ export const dateRangeControl = (function () {
           {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && commonAdvanceSection(children)}
 
           {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
-            <Section name={sectionNames.style}>
-              {children.style.getPropertyView()}
-            </Section>
+            <>
+              <Section name={sectionNames.style}>
+                {children.style.getPropertyView()}
+              </Section>
+              <Section name={sectionNames.labelStyle}>
+                {children.labelStyle.getPropertyView()}
+              </Section>
+              <Section name={sectionNames.inputFieldStyle}>
+                {children.inputFieldStyle.getPropertyView()}
+              </Section>
+            </>
           )}
 
         </>
@@ -385,8 +419,8 @@ export const DatePickerComp = withExposingConfigs(datePickerControl, [
     desc: trans("export.datePickerValueDesc"),
     depKeys: ["value", "showTime"],
     func: (input) => {
-      const mom = dayjs(input.value, DateParser);
-      return mom.isValid() ? mom.format(input.showTime ? DATE_TIME_FORMAT : DATE_FORMAT) : "";
+      const mom = Boolean(input.value) ? dayjs(input.value, DateParser) : null;
+      return mom?.isValid() ? mom.format(input.showTime ? DATE_TIME_FORMAT : DATE_FORMAT) : null;
     },
   }),
   depsConfig({
@@ -394,8 +428,8 @@ export const DatePickerComp = withExposingConfigs(datePickerControl, [
     desc: trans("export.datePickerFormattedValueDesc"),
     depKeys: ["value", "format"],
     func: (input) => {
-      const mom = dayjs(input.value, DateParser);
-      return mom.isValid() ? mom.format(input.format) : "";
+      const mom = Boolean(input.value) ? dayjs(input.value, DateParser) : null;
+      return mom?.isValid() ? mom.format(input.format) : "";
     },
   }),
   depsConfig({
@@ -403,8 +437,8 @@ export const DatePickerComp = withExposingConfigs(datePickerControl, [
     desc: trans("export.datePickerTimestampDesc"),
     depKeys: ["value"],
     func: (input) => {
-      const mom = dayjs(input.value, DateParser);
-      return mom.isValid() ? mom.unix() : "";
+      const mom = Boolean(input.value) ? dayjs(input.value, DateParser) : null;
+      return mom?.isValid() ? mom.unix() : "";
     },
   }),
   depsConfig({
@@ -426,8 +460,8 @@ export let DateRangeComp = withExposingConfigs(dateRangeControl, [
     desc: trans("export.dateRangeStartDesc"),
     depKeys: ["start", "showTime"],
     func: (input) => {
-      const mom = dayjs(input.start, DateParser);
-      return mom.isValid() ? mom.format(input.showTime ? DATE_TIME_FORMAT : DATE_FORMAT) : "";
+      const mom = Boolean(input.start) ? dayjs(input.start, DateParser): null;
+      return mom?.isValid() ? mom.format(input.showTime ? DATE_TIME_FORMAT : DATE_FORMAT) : null;
     },
   }),
   depsConfig({
@@ -435,8 +469,8 @@ export let DateRangeComp = withExposingConfigs(dateRangeControl, [
     desc: trans("export.dateRangeEndDesc"),
     depKeys: ["end", "showTime"],
     func: (input) => {
-      const mom = dayjs(input.end, DateParser);
-      return mom.isValid() ? mom.format(input.showTime ? DATE_TIME_FORMAT : DATE_FORMAT) : "";
+      const mom = Boolean(input.end) ? dayjs(input.end, DateParser): null;
+      return mom?.isValid() ? mom.format(input.showTime ? DATE_TIME_FORMAT : DATE_FORMAT) : null;
     },
   }),
   depsConfig({
@@ -444,8 +478,8 @@ export let DateRangeComp = withExposingConfigs(dateRangeControl, [
     desc: trans("export.dateRangeStartTimestampDesc"),
     depKeys: ["start"],
     func: (input) => {
-      const mom = dayjs(input.start, DateParser);
-      return mom.isValid() ? mom.unix() : "";
+      const mom = Boolean(input.start) ? dayjs(input.start, DateParser) : null;
+      return mom?.isValid() ? mom.unix() : "";
     },
   }),
   depsConfig({
@@ -453,8 +487,8 @@ export let DateRangeComp = withExposingConfigs(dateRangeControl, [
     desc: trans("export.dateRangeEndTimestampDesc"),
     depKeys: ["end"],
     func: (input) => {
-      const mom = dayjs(input.end, DateParser);
-      return mom.isValid() ? mom.unix() : "";
+      const mom = Boolean(input.end) ? dayjs(input.end, DateParser) : null;
+      return mom?.isValid() ? mom.unix() : "";
     },
   }),
   depsConfig({
@@ -462,11 +496,11 @@ export let DateRangeComp = withExposingConfigs(dateRangeControl, [
     desc: trans("export.dateRangeFormattedValueDesc"),
     depKeys: ["start", "end", "format"],
     func: (input) => {
-      const start = dayjs(input.start, DateParser);
-      const end = dayjs(input.end, DateParser);
+      const start = Boolean(input.start) ? dayjs(input.start, DateParser): null;
+      const end = Boolean(input.end) ? dayjs(input.end, DateParser): null;
       return [
-        start.isValid() && start.format(input.format),
-        end.isValid() && end.format(input.format),
+        start?.isValid() && start.format(input.format),
+        end?.isValid() && end.format(input.format),
       ]
         .filter((item) => item)
         .join(" - ");
@@ -477,8 +511,8 @@ export let DateRangeComp = withExposingConfigs(dateRangeControl, [
     desc: trans("export.dateRangeFormattedStartValueDesc"),
     depKeys: ["start", "format"],
     func: (input) => {
-      const start = dayjs(input.start, DateParser);
-      return start.isValid() && start.format(input.format);
+      const start = Boolean(input.start) ? dayjs(input.start, DateParser): null;
+      return start?.isValid() && start.format(input.format);
     },
   }),
   depsConfig({
@@ -486,8 +520,8 @@ export let DateRangeComp = withExposingConfigs(dateRangeControl, [
     desc: trans("export.dateRangeFormattedEndValueDesc"),
     depKeys: ["end", "format"],
     func: (input) => {
-      const end = dayjs(input.end, DateParser);
-      return end.isValid() && end.format(input.format);
+      const end = Boolean(input.end) ? dayjs(input.end, DateParser): null;
+      return end?.isValid() && end.format(input.format);
     },
   }),
   depsConfig({

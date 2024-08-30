@@ -66,7 +66,7 @@ const HovDiv = styled.div`
 const IconContain = (props: { Icon: React.FunctionComponent<React.SVGProps<SVGSVGElement>> }) => {
   const { Icon } = props;
   return (
-    <CompIconDiv w={64} h={64}>
+    <CompIconDiv $w={64} $h={64}>
       <Icon />
     </CompIconDiv>
   );
@@ -145,7 +145,7 @@ export const UICompPanel = () => {
   const compList = useMemo(
     () =>
       Object.entries(categories)
-        .filter(([key]) => !(!isEmpty(searchValue) && (key as UICompCategory) === "dashboards"))
+        // .filter(([key]) => !(!isEmpty(searchValue) && (key as UICompCategory) === "dashboards"))
         .map(([key, value], index) => {
           let infos = value;
           if (!isEmpty(searchValue)) {

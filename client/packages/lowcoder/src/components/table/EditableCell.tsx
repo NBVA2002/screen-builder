@@ -1,7 +1,7 @@
 import { PresetStatusColorType } from "antd/es/_util/colors";
 import _ from "lodash";
 import { changeChildAction, DispatchType } from "lowcoder-core";
-import { constantColors } from "lowcoder-design";
+import { constantColors } from "lowcoder-design/src/components/colorSelect/colorUtils";
 import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { JSONValue } from "util/jsonTypes";
@@ -34,6 +34,8 @@ export interface CellProps {
   size?: string;
   candidateTags?: string[];
   candidateStatus?: { text: string; status: StatusType }[];
+  textOverflow?: boolean;
+  onTableEvent?: (eventName: any) => void;
 }
 
 export type CellViewReturn = (props: CellProps) => ReactNode;
@@ -42,17 +44,6 @@ export type EditViewFn<T> = (props: {
   onChange: (value: T) => void;
   onChangeEnd: () => void;
 }) => ReactNode;
-
-export const SizeWrapper = styled.div<{ $size?: string }>`
-  ${(props) =>
-    props.$size &&
-    `padding: ${
-      props.$size === "small" ? "8.5px 8px" : props.$size === "large" ? "16.5px 16px" : "12.5px 8px"
-    };
-    line-height: 21px;
-    min-height: ${props.$size === "small" ? "39px" : props.$size === "large" ? "55px" : "47px"};
-    `}
-`;
 
 const BorderDiv = styled.div`
   position: absolute;
@@ -80,23 +71,27 @@ export function EditableCell<T extends JSONValue>(props: EditableCellProps<T>) {
     changeValue,
     baseValue,
     candidateTags,
+    // tagColors
     candidateStatus,
+    onTableEvent,
   } = props;
   const status = _.isNil(changeValue) ? "normal" : "toSave";
   const editable = editViewFn ? props.editable : false;
   const { isEditing, setIsEditing } = useContext(TableCellContext);
   const value = changeValue ?? baseValue!;
-
   const [tmpValue, setTmpValue] = useState<T | null>(value);
+
   useEffect(() => {
     setTmpValue(value);
   }, [value]);
+
   const onChange = useCallback(
     (value: T) => {
       setTmpValue(value);
     },
     [setTmpValue]
   );
+
   const onChangeEnd = useCallback(() => {
     setIsEditing(false);
     dispatch(
@@ -106,6 +101,9 @@ export function EditableCell<T extends JSONValue>(props: EditableCellProps<T>) {
         false
       )
     );
+    if(!_.isEqual(tmpValue, value)) {
+      onTableEvent?.('columnEdited');
+    }
   }, [dispatch, baseValue, tmpValue]);
   const editView = useMemo(
     () => editViewFn?.({ value, onChange, onChangeEnd }) ?? <></>,
@@ -127,11 +125,25 @@ export function EditableCell<T extends JSONValue>(props: EditableCellProps<T>) {
   }
 
   return (
-    <ColumnTypeView>
+    <ColumnTypeView
+      textOverflow={props.textOverflow}
+    >
       {status === "toSave" && !isEditing && <EditableChip />}
-      <SizeWrapper $size={props.size} onDoubleClick={enterEditFn}>
-        {normalView}
-      </SizeWrapper>
+      {normalView}
+      {/* overlay on normal view to handle double click for editing */}
+      {editable && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+          }}
+          onDoubleClick={enterEditFn}
+        >
+        </div>
+      )}
     </ColumnTypeView>
   );
 }

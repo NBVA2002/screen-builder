@@ -128,6 +128,18 @@ export function QueryPropertyView(props: { comp: InstanceType<typeof QueryComp> 
                     })}
                   </>
                 </QuerySectionWrapper>
+
+                <QuerySectionWrapper>
+                  <>
+                    {children.condition.propertyView({
+                      label: trans("eventHandler.condition"),
+                      tooltip: trans("eventHandler.conditionTooltip"),
+                      placeholder: "{{ !!example.value }}",
+                      placement: "bottom",
+                    })}
+                  </>
+                </QuerySectionWrapper>
+
               </QueryPropertyViewWrapper>
             ),
           },

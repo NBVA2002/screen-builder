@@ -9,12 +9,13 @@ import { LoginLogoStyle, LoginLabelStyle, StyledLoginButton } from "pages/userAu
 import { useSelector } from "react-redux";
 import { selectSystemConfig } from "redux/selectors/configSelectors";
 import React from "react";
-import { messageInstance } from "lowcoder-design";
+import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
 import styled from "styled-components";
 import { trans } from "i18n";
 import { geneAuthStateAndSaveParam, getAuthUrl, getRedirectUrl } from "pages/userAuth/authUtils";
-import { Divider } from "antd";
+import { default as Divider } from "antd/es/divider";
 import { useRedirectUrl } from "util/hooks";
+import { MultiIconDisplay } from "../../../comps/comps/multiIconDisplay";
 
 const ThirdPartyLoginButtonWrapper = styled.div`
   button{
@@ -87,7 +88,8 @@ function ThirdPartyLoginButton(props: {
 
   return (
     <StyledLoginButton buttonType="normal" onClick={onLoginClick}>
-      <LoginLogoStyle alt={config.name} src={config.logo} title={config.name} />
+      {config.icon && <MultiIconDisplay identifier={config.icon} width="20px" height="20px" style={{ marginRight: "20px", flexShrink: 0, color: "#000" }} />}
+      {!config.icon && <LoginLogoStyle alt={config.name} src={config.logo} title={config.name} />}
       <LoginLabelStyle className="auth-label">
         { buttonLabel }
       </LoginLabelStyle>

@@ -1,4 +1,4 @@
-import { Carousel } from "antd";
+import { default as Carousel } from "antd/es/carousel";
 import { Section, sectionNames } from "lowcoder-design";
 import { BoolControl } from "../controls/boolControl";
 import { UICompBuilder, withDefault } from "../generators";
@@ -13,23 +13,24 @@ import { useRef, useState } from "react";
 import ReactResizeDetector from "react-resize-detector";
 import { ArrayStringControl } from "comps/controls/codeControl";
 import { styleControl } from "comps/controls/styleControl";
-import { CarouselStyle } from "comps/controls/styleControlConstants";
+import { AnimationStyle, AnimationStyleType, CarouselStyle } from "comps/controls/styleControlConstants";
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
 
 // TODO: dots at top position needs proper margin (should be the same as bottom position)
 
-const CarouselItem = styled.div<{ src: string }>`
-  background: ${(props) => props.src && `url(${props.src})`} no-repeat 50% 50%;
+const CarouselItem = styled.div<{ $src: string }>`
+  background: ${(props) => props.$src && `url(${props.$src})`} no-repeat 50% 50%;
   background-size: contain;
 `;
 
-const Container = styled.div<{ bg: string }>`
+const Container = styled.div<{$bg: string; $animationStyle:AnimationStyleType}>`
   &,
   .ant-carousel {
     height: 100%;
-    background-color: ${(props) => props.bg};
+    background-color: ${(props) => props.$bg};
+    ${props=>props.$animationStyle}
   }
 `;
 
@@ -44,7 +45,7 @@ let CarouselBasicComp = (function () {
     showDots: withDefault(BoolControl, true),
     dotPosition: withDefault(PositionControl, "bottom"),
     style: styleControl(CarouselStyle),
-
+    animationStyle: styleControl(AnimationStyle),
     ...formDataChildren,
   };
   return new UICompBuilder(childrenMap, (props) => {
@@ -56,7 +57,11 @@ let CarouselBasicComp = (function () {
       }
     };
     return (
-      <Container ref={containerRef} bg={props.style.background}>
+      <Container
+        ref={containerRef}
+        $bg={props.style.background}
+        $animationStyle={props.animationStyle}
+      >
         <ReactResizeDetector onResize={onResize}>
           <Carousel
             dots={props.showDots}
@@ -66,7 +71,7 @@ let CarouselBasicComp = (function () {
           >
             {props.data.map((url, index) => (
               <div key={index}>
-                <CarouselItem src={url} style={{ height }} />
+                <CarouselItem $src={url} style={{ height }} />
               </div>
             ))}
           </Carousel>
@@ -99,6 +104,9 @@ let CarouselBasicComp = (function () {
               </Section>
               <Section name={sectionNames.style}>
                 {children.style.getPropertyView()}
+              </Section>
+              <Section name={sectionNames.animationStyle} hasTooltip={true}>
+                {children.animationStyle.getPropertyView()}
               </Section>
             </>
           )}

@@ -1,12 +1,12 @@
-import { Button, Upload as AntdUpload } from "antd";
-import { UploadChangeParam } from "antd/lib/upload";
-import { UploadFile, UploadProps } from "antd/lib/upload/interface";
+import { default as Button } from "antd/es/button";
+import { default as AntdUpload } from "antd/es/upload";
+import { UploadFile, UploadProps, UploadChangeParam } from "antd/es/upload/interface";
 import { Buffer } from "buffer";
 import { darkenColor } from "components/colorSelect/colorUtils";
 import { Section, sectionNames } from "components/Section";
 import { IconControl } from "comps/controls/iconControl";
 import { styleControl } from "comps/controls/styleControl";
-import { FileStyle, FileStyleType, heightCalculator, widthCalculator } from "comps/controls/styleControlConstants";
+import { AnimationStyle, AnimationStyleType, FileStyle, FileStyleType, heightCalculator, widthCalculator } from "comps/controls/styleControlConstants";
 import { withMethodExposing } from "comps/generators/withMethodExposing";
 import { hasIcon } from "comps/utils";
 import { getComponentDocUrl } from "comps/utils/compDocUtil";
@@ -38,7 +38,7 @@ import { changeEvent, eventHandlerControl } from "../../controls/eventHandlerCon
 import { stateComp, UICompBuilder, withDefault } from "../../generators";
 import { CommonNameConfig, NameConfig, withExposingConfigs } from "../../generators/withExposing";
 import { formDataChildren, FormDataPropertyView } from "../formComp/formDataConstants";
-import { messageInstance } from "lowcoder-design";
+import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
 
 import React, { useContext } from "react";
 import { EditorContext } from "comps/editorState";
@@ -101,6 +101,7 @@ const commonChildren = {
   disabled: BoolCodeControl,
   onEvent: eventHandlerControl(EventOptions),
   style: styleControl(FileStyle),
+  animationStyle: styleControl(AnimationStyle),
   parseFiles: BoolPureControl,
   parsedValue: stateComp<Array<JSONValue | null>>([]),
   prefixIcon: withDefault(IconControl, "/icon:solid/arrow-up-from-bracket"),
@@ -137,10 +138,20 @@ const getStyle = (style: FileStyleType) => {
   return css`
     .ant-btn {
       border-radius: ${style.radius};
+      rotate: ${style.rotation};
       margin: ${style.margin};	
       padding: ${style.padding};	
       width: ${widthCalculator(style.margin)};	
       height: ${heightCalculator(style.margin)};
+      font-family:${style.fontFamily};
+      font-size:${style.textSize};
+      font-weight:${style.textWeight};
+      font-style:${style.fontStyle};
+      border-width:${style.borderWidth};
+      border-style:${style.borderStyle};
+      text-decoration:${style.textDecoration};
+      text-transform:${style.textTransform};
+      text-transform:${style.textTransform};
     }
 
     .ant-btn:not(:disabled) {
@@ -162,9 +173,13 @@ const getStyle = (style: FileStyleType) => {
   `;
 };
 
-const StyledUpload = styled(AntdUpload)<{ $style: FileStyleType }>`
+const StyledUpload = styled(AntdUpload)<{
+  $style: FileStyleType;
+  $animationStyle: AnimationStyleType;
+}>`
   .ant-upload,
   .ant-btn {
+    ${(props) => props.$animationStyle}
     width: 100%;
     display: inline-flex;
     justify-content: center;
@@ -180,7 +195,6 @@ const StyledUpload = styled(AntdUpload)<{ $style: FileStyleType }>`
       min-height: 1px;
     }
   }
-
   ${(props) => props.$style && getStyle(props.$style)}
 `;
 
@@ -210,7 +224,7 @@ export function resolveParsedValue(files: UploadFile[]) {
           .then((a) => {
             const ext = mime.getExtension(f.originFileObj?.type ?? "");
             if (ext === "xlsx" || ext === "csv") {
-              const workbook = XLSX.read(a, { raw: true });
+              const workbook = XLSX.read(a, { raw: true, codepage: 65001 });
               return XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {
                 raw: false,
               });
@@ -247,6 +261,7 @@ const Upload = (
   const hasChildren = hasIcon(props.prefixIcon) || !!props.text || hasIcon(props.suffixIcon);
   return (
     <StyledUpload
+    $animationStyle={props.animationStyle}
       {...commonProps(props)}
       $style={style}
       fileList={fileList}
@@ -414,7 +429,10 @@ let FileTmpComp = new UICompBuilder(childrenMap, (props, dispatch) => (
       )}
 
       {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
-        <><Section name={sectionNames.style}>{children.style.getPropertyView()}</Section></>
+        <>
+          <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
+          <Section name={sectionNames.animationStyle} hasTooltip={true}>{children.animationStyle.getPropertyView()}</Section>
+        </>
       )}
     </>
   ))

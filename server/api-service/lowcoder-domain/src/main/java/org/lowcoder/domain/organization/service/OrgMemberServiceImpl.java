@@ -1,22 +1,13 @@
 package org.lowcoder.domain.organization.service;
 
-import static org.lowcoder.infra.birelation.BiRelationBizType.ORG_MEMBER;
-
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.lowcoder.domain.group.model.GroupMember;
 import org.lowcoder.domain.group.service.GroupMemberService;
 import org.lowcoder.domain.group.service.GroupService;
-import org.lowcoder.domain.organization.model.MemberRole;
-import org.lowcoder.domain.organization.model.OrgMember;
-import org.lowcoder.domain.organization.model.OrgMemberState;
-import org.lowcoder.domain.organization.model.Organization;
-import org.lowcoder.domain.organization.model.OrganizationState;
+import org.lowcoder.domain.organization.model.*;
 import org.lowcoder.infra.annotation.PossibleEmptyMono;
 import org.lowcoder.infra.birelation.BiRelation;
 import org.lowcoder.infra.birelation.BiRelationService;
@@ -25,35 +16,31 @@ import org.lowcoder.infra.util.FluxHelper;
 import org.lowcoder.sdk.config.CommonConfig;
 import org.lowcoder.sdk.config.CommonConfig.Workspace;
 import org.lowcoder.sdk.constants.WorkspaceMode;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+
+import static org.lowcoder.infra.birelation.BiRelationBizType.ORG_MEMBER;
+
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class OrgMemberServiceImpl implements OrgMemberService {
 
-    @Autowired
-    private BiRelationService biRelationService;
-
-    @Autowired
-    private GroupMemberService groupMemberService;
-
-    @Autowired
-    private GroupService groupService;
-
-    @Autowired
-    private OrganizationService organizationService;
-
-    @Autowired
-    private CommonConfig commonConfig;
-
-    @Autowired
-    private MongoUpsertHelper mongoUpsertHelper;
+    private final BiRelationService biRelationService;
+    private final GroupMemberService groupMemberService;
+    private final GroupService groupService;
+    @Lazy
+    private final OrganizationService organizationService;
+    private final CommonConfig commonConfig;
+    private final MongoUpsertHelper mongoUpsertHelper;
 
     @Override
     public Flux<OrgMember> getOrganizationMembers(String orgId) {
@@ -243,7 +230,7 @@ public class OrgMemberServiceImpl implements OrgMemberService {
 
     @Override
     public Mono<Void> bulkAddMember(String orgId, Collection<String> userIds, MemberRole memberRole) {
-        List<BiRelation> biRelations = userIds.stream()
+        List<BiRelation> biRelations = (List<BiRelation>)userIds.stream()
                 .map(userId -> BiRelation.builder()
                         .bizType(ORG_MEMBER)
                         .sourceId(orgId)

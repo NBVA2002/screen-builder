@@ -18,13 +18,26 @@ export const en = {
   },
   prop: {
     basic: "Basic",
+    resources: "Resources",
     interaction: "Interaction",
     advanced: "Advanced",
     validation: "Validation",
     layout: "Layout",
+    animationStyle:"Animation Style",
+    labelStyle: "Label Style",
     style: "Style",
-    meetings : "Meeting Settings",
+    meetings: "Meeting Settings",
     data: "Data",
+    field: 'Field',
+    inputFieldStyle: 'Input Field Style',
+    avatarStyle: 'Avatar Style',
+    captionStyle: 'Caption Style',
+    startButtonStyle: 'Start Button Style',
+    resetButtonStyle: 'Reset Button Style',
+    headerStyle: 'Header Style',
+    bodyStyle: 'Body Style',
+    badgeStyle: 'Badge Style',
+    columnStyle: 'Column Style',
   },
   passwordInput: {
     label: "Password:",
@@ -42,6 +55,10 @@ export const en = {
   iconSelect: {
     title: "Select icon",
     searchPlaceholder: "Search icon",
+  },
+  shapeSelect: {
+    title: "Select shape",
+    searchPlaceholder: "Search shape",
   },
   eventHandler: {
     advanced: "Advanced",

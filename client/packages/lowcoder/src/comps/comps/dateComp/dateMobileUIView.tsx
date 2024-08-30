@@ -3,13 +3,13 @@ import { DateTimeStyleType } from "comps/controls/styleControlConstants";
 import { getMobileStyle } from "comps/comps/dateComp/dateCompUtil";
 import dayjs from "dayjs";
 import { DATE_FORMAT, DATE_TIME_FORMAT, DateParser } from "util/dateTimeUtils";
-import { CanvasContainerID } from "constants/domLocators";
 import { trans } from "i18n";
 import React from "react";
 import { DataUIViewProps } from "comps/comps/dateComp/dateUIView";
-import { SwapRightOutlined } from "@ant-design/icons";
+import { default as SwapRightOutlined } from "@ant-design/icons/SwapRightOutlined"
 import { DateRangeUIViewProps } from "comps/comps/dateComp/dateRangeUIView";
 import { DateCompViewProps } from "comps/comps/dateComp/dateComp";
+import {useModalContainer} from "@lowcoder-ee/comps/hooks/modalComp";
 
 const handleClick = async (
   params: Pick<
@@ -18,18 +18,21 @@ const handleClick = async (
   > & {
     value: dayjs.Dayjs | null;
     onChange: (value: dayjs.Dayjs | null) => void;
+    getContainer: () => HTMLElement;
   }
 ) => {
   const MobileDatePicker = (await import("antd-mobile/es/components/date-picker")).default;
 
-  const min = dayjs(params.minDate, DateParser);
-  const max = dayjs(params.maxDate, DateParser);
+  const min = dayjs(params.minDate, DateParser, true);
+  const max = dayjs(params.maxDate, DateParser, true);
 
   const { disabledHours, disabledMinutes, disabledSeconds } = params.disabledTime();
 
   MobileDatePicker.prompt({
-    getContainer: () => document.querySelector(`#${CanvasContainerID}`) || document.body,
+    getContainer: params.getContainer,
     mouseWheel: true,
+    cancelText: trans("cancel"),
+    confirmText: trans("ok"),
     destroyOnClose: true,
     closeOnMaskClick: true,
     min: min.isValid() ? min.toDate() : undefined,
@@ -74,46 +77,55 @@ const DateItem = styled.div`
   justify-content: center;
 `;
 
-export const DateMobileUIView = (props: DataUIViewProps) => (
-  <MobileView ref={props.viewRef} $style={props.$style} onClick={() => handleClick(props)}>
-    <DateItem>
-      {props.value
-        ? props.value.format(props.format || (props.showTime ? DATE_TIME_FORMAT : DATE_FORMAT))
-        : trans("date.placeholder")}
-    </DateItem>
-    {props.suffixIcon}
-  </MobileView>
-);
+export const DateMobileUIView = (props: DataUIViewProps) => {
+  const getContainer = useModalContainer();
 
-export const DateRangeMobileUIView = (props: DateRangeUIViewProps) => (
-  <MobileView ref={props.viewRef} $style={props.$style}>
-    <DateItem
-      onClick={() =>
-        handleClick({
-          ...props,
-          value: props.start,
-          onChange: (value) => props.onChange(value, props.end),
-        })
-      }
-    >
-      {props.start
-        ? props.start.format(props.format || (props.showTime ? DATE_TIME_FORMAT : DATE_FORMAT))
-        : trans("date.startDate")}
-    </DateItem>
-    <SwapRightOutlined />
-    <DateItem
-      onClick={() =>
-        handleClick({
-          ...props,
-          value: props.end,
-          onChange: (value) => props.onChange(props.start, value),
-        })
-      }
-    >
-      {props.end
-        ? props.end.format(props.format || (props.showTime ? DATE_TIME_FORMAT : DATE_FORMAT))
-        : trans("date.endDate")}
-    </DateItem>
-    {props.suffixIcon}
-  </MobileView>
-);
+  return (<MobileView ref={props.viewRef} $style={props.$style} onClick={() => handleClick({...props, getContainer})}>
+      <DateItem>
+        {props.value
+          ? props.value.format(props.format || (props.showTime ? DATE_TIME_FORMAT : DATE_FORMAT))
+          : props.placeholder ?? trans("date.placeholder")}
+      </DateItem>
+      {props.suffixIcon}
+    </MobileView>
+  );
+}
+
+export const DateRangeMobileUIView = (props: DateRangeUIViewProps) => {
+  const getContainer = useModalContainer();
+
+  return (
+    <MobileView ref={props.viewRef} $style={props.$style}>
+      <DateItem
+        onClick={() =>
+          handleClick({
+            ...props,
+            value: props.start,
+            onChange: (value) => props.onChange(value, props.end),
+            getContainer
+          })
+        }
+      >
+        {props.start
+          ? props.start.format(props.format || (props.showTime ? DATE_TIME_FORMAT : DATE_FORMAT))
+          : trans("date.startDate")}
+      </DateItem>
+      <SwapRightOutlined/>
+      <DateItem
+        onClick={() =>
+          handleClick({
+            ...props,
+            value: props.end,
+            onChange: (value) => props.onChange(props.start, value),
+            getContainer
+          })
+        }
+      >
+        {props.end
+          ? props.end.format(props.format || (props.showTime ? DATE_TIME_FORMAT : DATE_FORMAT))
+          : trans("date.endDate")}
+      </DateItem>
+      {props.suffixIcon}
+    </MobileView>
+  );
+}

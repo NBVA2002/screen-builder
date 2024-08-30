@@ -7,14 +7,14 @@ import { QueryConfigItemWrapper, QueryConfigLabel, QueryConfigWrapper } from "co
 import { GraphqlQuery } from "./graphqlQuery";
 import { StreamQuery } from "./streamQuery";
 
-const UrlInput = styled.div<{ hasAddonBefore: boolean }>`
+const UrlInput = styled.div<{ $hasAddonBefore: boolean }>`
   display: flex;
   width: 100%;
 
   .cm-editor {
     margin-top: 0;
-    ${(props) => props.hasAddonBefore && "border-top-left-radius: 0;"}
-    ${(props) => props.hasAddonBefore && "border-bottom-left-radius: 0;"};
+    ${(props) => props.$hasAddonBefore && "border-top-left-radius: 0;"}
+    ${(props) => props.$hasAddonBefore && "border-bottom-left-radius: 0;"};
   }
 `;
 
@@ -33,6 +33,19 @@ const UrlInputAddonBefore = styled.div`
   white-space: nowrap;
 `;
 
+export const HttpProxyPropertyView = (props: {
+    comp: InstanceType<typeof HttpQuery | typeof GraphqlQuery | typeof StreamQuery>;
+    datasourceId: string;
+    urlPlaceholder?: string;
+}) => {
+    return (<QueryConfigWrapper>
+        <QueryConfigLabel>Proxy</QueryConfigLabel>
+        <QueryConfigItemWrapper>
+            {props.comp.children.proxy.propertyView({})}
+        </QueryConfigItemWrapper>
+    </QueryConfigWrapper>);
+};
+
 export const HttpPathPropertyView = (props: {
   comp: InstanceType<typeof HttpQuery | typeof GraphqlQuery | typeof StreamQuery>;
   datasourceId: string;
@@ -46,7 +59,7 @@ export const HttpPathPropertyView = (props: {
     <QueryConfigWrapper>
       <QueryConfigLabel>URL</QueryConfigLabel>
       <QueryConfigItemWrapper>
-        <UrlInput hasAddonBefore={!!httpConfig?.url}>
+        <UrlInput $hasAddonBefore={!!httpConfig?.url}>
           {httpConfig?.url && <UrlInputAddonBefore>{httpConfig?.url}</UrlInputAddonBefore>}
 
           {props.comp.children.path.propertyView({

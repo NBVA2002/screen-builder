@@ -1,8 +1,9 @@
 package org.lowcoder.runner.migrations;
 
-import static org.lowcoder.domain.util.QueryDslUtils.fieldName;
-import static org.lowcoder.sdk.util.IDUtils.generate;
-
+import com.github.cloudyrock.mongock.ChangeLog;
+import com.github.cloudyrock.mongock.ChangeSet;
+import com.github.cloudyrock.mongock.driver.mongodb.springdata.v4.decorator.impl.MongockTemplate;
+import lombok.extern.slf4j.Slf4j;
 import org.lowcoder.domain.application.model.Application;
 import org.lowcoder.domain.datasource.model.Datasource;
 import org.lowcoder.domain.datasource.model.DatasourceStructureDO;
@@ -18,23 +19,24 @@ import org.lowcoder.infra.birelation.BiRelation;
 import org.lowcoder.infra.config.model.ServerConfig;
 import org.lowcoder.infra.eventlog.EventLog;
 import org.lowcoder.infra.serverlog.ServerLog;
+import org.lowcoder.runner.migrations.job.AddPtmFieldsJob;
+import org.lowcoder.runner.migrations.job.AddSuperAdminUser;
 import org.lowcoder.runner.migrations.job.CompleteAuthType;
 import org.lowcoder.runner.migrations.job.MigrateAuthConfigJob;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.UncategorizedMongoDbException;
 import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexOperations;
 
-import com.github.cloudyrock.mongock.ChangeLog;
-import com.github.cloudyrock.mongock.ChangeSet;
-import com.github.cloudyrock.mongock.driver.mongodb.springdata.v3.decorator.impl.MongockTemplate;
-
-import lombok.extern.slf4j.Slf4j;
+import static org.lowcoder.domain.util.QueryDslUtils.fieldName;
+import static org.lowcoder.sdk.util.IDUtils.generate;
 
 @SuppressWarnings("all")
 @Slf4j
 @ChangeLog(order = "001")
+@Profile("!test")
 public class DatabaseChangelog {
 
     @ChangeSet(order = "001", id = "init-indexes", author = "")
@@ -173,6 +175,23 @@ public class DatabaseChangelog {
     @ChangeSet(order = "018", id = "complete-auth-type", author = "")
     public void completeAuthType(CompleteAuthType completeAuthType) {
         completeAuthType.complete();
+    }
+
+    @ChangeSet(order = "019", id = "add-org-id-index-on-server-log", author = "")
+    public void addOrgIdIndexOnServerLog(MongockTemplate mongoTemplate) {
+        ensureIndexes(mongoTemplate, ServerLog.class,
+                makeIndex("orgId")
+        );
+    }
+
+    @ChangeSet(order = "020", id = "add-super-admin-user", author = "")
+    public void addSuperAdminUser(AddSuperAdminUser addSuperAdminUser) {
+        addSuperAdminUser.addSuperAdmin();
+    }
+
+    @ChangeSet(order = "021", id = "add-ptm-fields-to-applications", author = "")
+    public void addPtmFieldsToApplicatgions(AddPtmFieldsJob addPtmFieldsJob) {
+        addPtmFieldsJob.migrateApplicationsToInitPtmFields();
     }
 
     public static Index makeIndex(String... fields) {

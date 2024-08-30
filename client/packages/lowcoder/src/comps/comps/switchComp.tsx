@@ -1,10 +1,10 @@
-import { Switch } from "antd";
+import { default as Switch } from "antd/es/switch";
 import { BoolCodeControl } from "comps/controls/codeControl";
 import { booleanExposingStateControl } from "comps/controls/codeStateControl";
 import { changeEvent, eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { LabelControl } from "comps/controls/labelControl";
 import { styleControl } from "comps/controls/styleControl";
-import { SwitchStyle, SwitchStyleType } from "comps/controls/styleControlConstants";
+import { SwitchStyle, SwitchStyleType, LabelStyle,  InputFieldStyle, AnimationStyle } from "comps/controls/styleControlConstants";
 import { migrateOldData } from "comps/generators/simpleGenerators";
 import { Section, sectionNames } from "lowcoder-design";
 import styled, { css } from "styled-components";
@@ -89,16 +89,25 @@ let SwitchTmpComp = (function () {
     label: LabelControl,
     onEvent: eventHandlerControl(EventOptions),
     disabled: BoolCodeControl,
-    style: migrateOldData(styleControl(SwitchStyle), fixOldData),
+    style: styleControl(InputFieldStyle),
+    animationStyle: styleControl(AnimationStyle),
+    labelStyle: styleControl(
+      LabelStyle.filter(
+        (style) => ['accent', 'validate'].includes(style.name) === false
+      )
+    ),
     viewRef: RefControl<HTMLElement>,
-
+    inputFieldStyle:migrateOldData(styleControl(SwitchStyle), fixOldData),
     ...formDataChildren,
   };
   return new UICompBuilder(childrenMap, (props) => {
     return props.label({
       style: props.style,
+      labelStyle: props.labelStyle,
+      inputFieldStyle:props.inputFieldStyle,
+      animationStyle:props.animationStyle,
       children: (
-        <SwitchWrapper disabled={props.disabled} $style={props.style}>
+        <SwitchWrapper disabled={props.disabled} $style={props.inputFieldStyle}>
           <Switch
             checked={props.value.value}
             disabled={props.disabled}
@@ -135,9 +144,20 @@ let SwitchTmpComp = (function () {
           )}
 
           {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
-            <Section name={sectionNames.style}>
-              {children.style.getPropertyView()}
-            </Section>
+            <>
+              <Section name={sectionNames.style}>
+                {children.style.getPropertyView()}
+              </Section>
+              <Section name={sectionNames.labelStyle}>
+                {children.labelStyle.getPropertyView()}
+              </Section>
+              <Section name={sectionNames.inputFieldStyle}>
+                {children.inputFieldStyle.getPropertyView()}
+              </Section>
+              <Section name={sectionNames.animationStyle} hasTooltip={true}>
+                {children.animationStyle.getPropertyView()}
+              </Section>
+            </>
           )}
         </>
       );

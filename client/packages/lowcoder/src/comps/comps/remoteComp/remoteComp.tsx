@@ -1,10 +1,9 @@
-import { Skeleton } from "antd";
+import { default as Skeleton } from "antd/es/skeleton";
 import { simpleMultiComp } from "comps/generators";
 import { withExposingConfigs } from "comps/generators/withExposing";
 import { GreyTextColor } from "constants/style";
 import log from "loglevel";
 import { Comp, CompAction, CompParams, customAction, isCustomAction } from "lowcoder-core";
-import { WhiteLoading } from "lowcoder-design";
 import { useState } from "react";
 import { useMount } from "react-use";
 import styled from "styled-components";
@@ -27,7 +26,7 @@ const ViewLoadingWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: white;
+  background-color: transparent;
   height: 100%;
 `;
 
@@ -78,7 +77,7 @@ function RemoteCompView(props: React.PropsWithChildren<RemoteCompViewProps>) {
 
   return (
     <ViewLoadingWrapper>
-      <WhiteLoading />
+      <Skeleton.Button active block shape="round"/>
     </ViewLoadingWrapper>
   );
 }
@@ -102,7 +101,7 @@ export function remoteComp<T extends RemoteCompInfo = RemoteCompInfo>(
       }
       let finalLoader = loader;
       if (!loader) {
-        finalLoader = loaders[remoteInfo.source];
+        finalLoader = !REACT_APP_MOBILE ? loaders[remoteInfo.source] : finalLoader = loaders.bundle;
       }
       if (!finalLoader) {
         log.error("loader not found, remote info:", remoteInfo);

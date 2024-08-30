@@ -1,3 +1,5 @@
+import { default as App } from "antd/es/app";
+import GlobalInstances from "components/GlobalInstances";
 import { RootComp } from "comps/comps/rootComp";
 import { GetContainerParams, useCompInstance } from "comps/utils/useCompInstance";
 import { createBrowserHistory } from "history";
@@ -7,6 +9,8 @@ import { Provider } from "react-redux";
 import { Route, Router } from "react-router";
 import { reduxStore } from "redux/store/store";
 import { ExternalEditorContext } from "util/context/ExternalEditorContext";
+import {CommonSettingResponseData} from "@lowcoder-ee/api/commonSettingApi";
+import {OrgCommonSettingsContext} from "lowcoder-sdk";
 
 const browserHistory = createBrowserHistory();
 
@@ -30,7 +34,10 @@ interface AppViewProps {
   moduleInputs?: Record<string | number, { name: string; value: any }>;
   onModuleEventTriggered?: (eventName: string) => void;
   onCompChange?: (comp: RootComp | null) => void;
+  orgCommonSettings?: CommonSettingResponseData;
 }
+
+const hideLoader = () => document.querySelector(".skeleton-container")?.classList.add("loader-hide");
 
 export function AppView(props: AppViewProps) {
   const { dsl, moduleDsl, appId, moduleInputs, onCompChange, onModuleEventTriggered } = props;
@@ -58,10 +65,10 @@ export function AppView(props: AppViewProps) {
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [appId]
+    [appId, dsl]
   );
 
-  const [comp] = useCompInstance(params);
+  const [comp, _, initialized] = useCompInstance(params);
 
   useEffect(() => {
     onCompChange?.(comp);
@@ -85,22 +92,31 @@ export function AppView(props: AppViewProps) {
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moduleInputs]);
+  }, [moduleInputs, initialized]);
+
+  useEffect(() => {
+    hideLoader();
+  }, []);
 
   return (
-    <Provider store={reduxStore}>
-      <ExternalEditorContext.Provider
-        value={{
-          applicationId: appId,
-          appType: 1,
-          readOnly: true,
-          hideHeader: true,
-        }}
-      >
-        <Router history={browserHistory}>
-          <Route path="/" render={() => comp?.getView()} />
-        </Router>
-      </ExternalEditorContext.Provider>
-    </Provider>
+    <App>
+      <GlobalInstances />
+      <Provider store={reduxStore}>
+        <ExternalEditorContext.Provider
+          value={{
+            applicationId: appId,
+            appType: 1,
+            readOnly: true,
+            hideHeader: true,
+          }}
+        >
+          <OrgCommonSettingsContext.Provider value={props.orgCommonSettings}>
+            <Router history={browserHistory}>
+              <Route path="/" render={() => comp?.getView()} />
+            </Router>
+          </OrgCommonSettingsContext.Provider>
+        </ExternalEditorContext.Provider>
+      </Provider>
+    </App>
   );
 }

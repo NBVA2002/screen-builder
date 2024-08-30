@@ -8,10 +8,19 @@ import lombok.Getter;
 public final class OAuth2RequestContext extends AuthRequestContext {
     private final String code;
     private final String redirectUrl;
+    private final Boolean isAccessToken;
 
     public OAuth2RequestContext(String orgId, String code, String redirectUrl) {
         this.setOrgId(orgId);
         this.code = code;
+        this.isAccessToken = false;
+        this.redirectUrl = redirectUrl;
+    }
+
+    public OAuth2RequestContext(String orgId, String code, String redirectUrl, Boolean isAccessToken) {
+        this.setOrgId(orgId);
+        this.code = code;
+        this.isAccessToken = isAccessToken;
         this.redirectUrl = redirectUrl;
     }
 }

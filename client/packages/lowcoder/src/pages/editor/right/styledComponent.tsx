@@ -2,7 +2,7 @@ import styled, { css } from "styled-components";
 import { StyledLink } from "pages/common/styledComponent";
 import { EmptyContent } from "components/EmptyContent";
 import { trans } from "i18n";
-import { labelCss } from "lowcoder-design";
+import { labelCss } from "lowcoder-design/src/components/Label";
 
 const NoShake = css`
   transform: translate3d(0, 0, 0);
@@ -11,25 +11,25 @@ const NoShake = css`
   transform-style: preserve-3d;
 `;
 
-export const CompIconDiv = styled.div<{ h: number; w: number }>`
+export const CompIconDiv = styled.div<{ $h: number; $w: number }>`
   ${NoShake};
   padding: 3px;
   background: #ffffff;
   border: 1px solid #d7d9e0;
   border-radius: 4px;
-  height: ${(props) => props.h}px;
-  width: ${(props) => props.w}px;
+  height: ${(props) => props.$h}px;
+  width: ${(props) => props.$w}px;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: grab;
   transition: all 0.2s ease-in-out;
 
-  :active {
+  &:active {
     background: #f2f4f8;
   }
 
-  :hover {
+  &:hover {
     ${NoShake};
     padding: 0;
     transform: scale(1.05);
@@ -58,7 +58,7 @@ export const EmptyCompContent = () => {
       text={
         <>
           {trans("rightPanel.searchNotFound")}
-          {aboutUsUrl && (
+          {aboutUsUrl && ( 
             <>
               <br />
               <StyledLink target="_blank" href={aboutUsUrl}>
@@ -66,10 +66,11 @@ export const EmptyCompContent = () => {
               </StyledLink>
             </>
           )}
+          <br /><br />
+          {trans("help.submitIssue")}
+          <br />
           {issueUrl && (
-            <StyledLink target="_blank" href={issueUrl}>
-              {trans("rightPanel.issueHere")}
-            </StyledLink>
+            <StyledLink target="_blank" href={issueUrl}>{trans("rightPanel.issueHere")}</StyledLink>
           )}
         </>
       }

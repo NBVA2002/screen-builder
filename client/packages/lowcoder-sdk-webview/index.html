@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <link href="/vite.svg" rel="icon" type="image/svg+xml"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Vite + React + TS</title>
+    <script type="importmap">
+        {
+          "imports": {
+            "react-dom": "./ReactDomExport.js",
+            "react": "./ReactExport.js"
+          }
+        }
+    </script>
+    <style>
+        @keyframes myAnimation {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                visibility: hidden;
+                opacity: 0;
+            }
+        }
+
+        .loader-hide {
+            animation-name: myAnimation;
+            animation-duration: 500ms;
+            animation-fill-mode: forwards;
+            animation-delay: 500ms;
+        }
+
+        .skeleton-container {
+            z-index: 9999;
+            min-height: 100vh;
+            width: 100vw;
+            background-color: white;
+            position: fixed;
+            top: 0;
+            color: rgba(0, 0, 0, 0.88);
+            font-size: 14px;
+            line-height: 1.5714285714285714;
+            list-style: none;
+            outline: none;
+            transition: opacity 0.3s;
+        }
+
+        .list-skeleton-items {
+            color: rgba(0, 0, 0, 0.88);
+            font-size: 14px;
+            line-height: 1.5714285714285714;
+            outline: none;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .list-skeleton-item {
+            font-size: 14px;
+            line-height: 1.5714285714285714;
+            list-style: none;
+            outline: none;
+            box-sizing: border-box;
+            justify-content: space-between;
+            color: rgba(0, 0, 0, 0.88);
+            display: block;
+            align-items: initial;
+            border-block-end: 1px solid rgba(5, 5, 5, 0.06);
+            padding: 16px 24px;
+        }
+
+        .skeleton {
+            display: table;
+            width: 100%;
+        }
+
+        .list-skeleton * {
+            outline: none;
+        }
+
+        .skeleton-header {
+            line-height: 1.5714285714285714;
+            list-style: none;
+            color: rgba(0, 0, 0, 0.88);
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+            display: table-cell;
+            padding-inline-end: 16px;
+            vertical-align: top;
+        }
+
+        .skeleton-with-avatar {
+            line-height: 1.5714285714285714;
+            list-style: none;
+            color: rgba(0, 0, 0, 0.88);
+            font-size: 14px;
+            box-sizing: border-box;
+            display: table;
+            width: 100%;
+            outline: none;
+        }
+
+        .skeleton .skeleton-header .skeleton-avatar-lg {
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+        }
+
+        .skeleton .skeleton-content {
+            display: table-cell;
+            width: 100%;
+            vertical-align: top;
+        }
+
+        .skeleton.skeleton-active .skeleton-image {
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.06) 25%, rgba(0, 0, 0, 0.15) 37%, rgba(0, 0, 0, 0.06) 63%);
+            background-size: 400% 100%;
+            animation-name: animation-skeleton-loading;
+            animation-duration: 1.4s;
+            animation-timing-function: ease;
+            animation-iteration-count: infinite;
+        }
+
+        .skeleton-title {
+            line-height: 1.5714285714285714;
+            list-style: none;
+            color: rgba(0, 0, 0, 0.88);
+            outline: none;
+            box-sizing: border-box;
+            height: 16px;
+            border-radius: 4px;
+            margin-block-start: 12px;
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.06) 25%, rgba(0, 0, 0, 0.15) 37%, rgba(0, 0, 0, 0.06) 63%);
+            background-size: 400% 100%;
+            animation-name: animation-skeleton-loading;
+            animation-duration: 1.4s;
+            animation-timing-function: ease;
+            animation-iteration-count: infinite;
+            width: 50%;
+        }
+
+        .skeleton.skeleton-active .skeleton-image {
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.06) 25%, rgba(0, 0, 0, 0.15) 37%, rgba(0, 0, 0, 0.06) 63%);
+            background-size: 400% 100%;
+            animation-name: animation-skeleton-loading;
+            animation-duration: 1.4s;
+            animation-timing-function: ease;
+            animation-iteration-count: infinite;
+        }
+
+        .skeleton-paragraph {
+            line-height: 1.5714285714285714;
+            list-style: none;
+            color: rgba(0, 0, 0, 0.88);
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+            padding: 0;
+            margin-block-start: 28px;
+        }
+
+        .skeleton-paragraph > li {
+            line-height: 1.5714285714285714;
+            color: rgba(0, 0, 0, 0.88);
+            font-size: 14px;
+            outline: none;
+            width: 100%;
+            height: 16px;
+            list-style: none;
+            border-radius: 4px;
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.06) 25%, rgba(0, 0, 0, 0.15) 37%, rgba(0, 0, 0, 0.06) 63%);
+            background-size: 400% 100%;
+            animation-name: animation-skeleton-loading;
+            animation-duration: 1.4s;
+            animation-timing-function: ease;
+            animation-iteration-count: infinite;
+            margin-block-start: 16px;
+        }
+
+        .skeleton .skeleton-header .skeleton-avatar-lg {
+            list-style: none;
+            color: rgba(0, 0, 0, 0.88);
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+            display: inline-block;
+            vertical-align: top;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.06) 25%, rgba(0, 0, 0, 0.15) 37%, rgba(0, 0, 0, 0.06) 63%);
+            background-size: 400% 100%;
+            animation-name: animation-skeleton-loading;
+            animation-duration: 1.4s;
+            animation-timing-function: ease;
+            animation-iteration-count: infinite;
+        }
+
+        @keyframes animation-skeleton-loading {
+            0% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0 50%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="skeleton-container">
+    <ul class="list-skeleton-items">
+        <li class="list-skeleton-item list-skeleton-item-no-flex">
+            <div class="skeleton skeleton-with-avatar skeleton-active ">
+                <div class="skeleton-header"><span
+                        class="skeleton-avatar skeleton-avatar-lg skeleton-avatar-circle"></span></div>
+                <div class="skeleton-content"><h3 class="skeleton-title" style="width: 50%;"></h3>
+                    <ul class="skeleton-paragraph">
+                        <li></li>
+                        <li></li>
+                    </ul>
+                </div>
+            </div>
+        </li>
+        <li class="list-skeleton-item list-skeleton-item-no-flex">
+            <div class="skeleton skeleton-with-avatar skeleton-active ">
+                <div class="skeleton-header"><span
+                        class="skeleton-avatar skeleton-avatar-lg skeleton-avatar-circle"></span></div>
+                <div class="skeleton-content"><h3 class="skeleton-title" style="width: 50%;"></h3>
+                    <ul class="skeleton-paragraph">
+                        <li></li>
+                        <li></li>
+                    </ul>
+                </div>
+            </div>
+        </li>
+        <li class="list-skeleton-item list-skeleton-item-no-flex">
+            <div class="skeleton skeleton-with-avatar skeleton-active ">
+                <div class="skeleton-header"><span
+                        class="skeleton-avatar skeleton-avatar-lg skeleton-avatar-circle"></span></div>
+                <div class="skeleton-content"><h3 class="skeleton-title" style="width: 50%;"></h3>
+                    <ul class="skeleton-paragraph">
+                        <li></li>
+                        <li></li>
+                    </ul>
+                </div>
+            </div>
+        </li>
+    </ul>
+</div>
+<div id="root"></div>
+<script src="/src/main.tsx" type="module"></script>
+</body>
+</html>

@@ -32,7 +32,9 @@ public interface UserService {
 
     Mono<Boolean> bindEmail(User user, String email);
 
-    Mono<User> findByAuthUser(AuthUser authUser);
+    Mono<User> findByAuthUserSourceAndRawId(AuthUser authUser);
+
+    Mono<User> findByAuthUserRawId(AuthUser authUser);
 
     Mono<User> createNewUserByAuthUser(AuthUser authUser);
 
@@ -40,11 +42,17 @@ public interface UserService {
 
     Mono<Boolean> addNewConnection(String userId, Connection connection);
 
+    Mono<User> addNewConnectionAndReturnUser(String userId, Connection connection);
+
     Mono<Void> deleteProfilePhoto(User visitor);
 
     Mono<Boolean> updatePassword(String userId, String oldPassword, String newPassword);
 
     Mono<String> resetPassword(String userId);
+
+    Mono<Boolean> lostPassword(String userEmail);
+
+    Mono<Boolean> resetLostPassword(String userEmail, String token, String newPassword);
 
     Mono<Boolean> setPassword(String userId, String password);
 

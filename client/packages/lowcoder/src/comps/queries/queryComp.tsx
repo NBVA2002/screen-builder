@@ -6,7 +6,7 @@ import {
 import axios from "axios";
 import DataSourceIcon from "components/DataSourceIcon";
 import { SimpleNameComp } from "comps/comps/simpleNameComp";
-import { StringControl } from "comps/controls/codeControl";
+import {BoolCodeControl, StringControl} from "comps/controls/codeControl";
 import { eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { EditorState } from "comps/editorState";
 import {
@@ -25,6 +25,7 @@ import { getReduceContext } from "comps/utils/reduceContext";
 import { trans } from "i18n";
 import _ from "lodash";
 import {
+  AbstractNode,
   ChangeValueAction,
   CompAction,
   CompActionTypes,
@@ -74,7 +75,7 @@ import { QueryConfirmationModal } from "./queryComp/queryConfirmationModal";
 import { QueryNotificationControl } from "./queryComp/queryNotificationControl";
 import { QueryPropertyView } from "./queryComp/queryPropertyView";
 import { getTriggerType, onlyManualTrigger } from "./queryCompUtils";
-import { messageInstance } from "lowcoder-design";
+import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
 
 const latestExecution: Record<string, string> = {};
 
@@ -151,6 +152,7 @@ const childrenMap = {
     },
   }),
   cancelPrevious: withDefault(BoolPureControl, false),
+  condition: BoolCodeControl,
 };
 
 let QueryCompTmp = withTypeAndChildren<typeof QueryMap, ToInstanceType<typeof childrenMap>>(
@@ -181,7 +183,7 @@ QueryCompTmp = class extends QueryCompTmp {
   readonly isDepReady: boolean = false;
 
   dispatchExecuteAction() {
-    this.dispatch(executeQueryAction({}));
+    if (!this.children.condition.unevaledValue || (this.children.condition.nodeWithoutCache()  as AbstractNode<any>).evalCache.value.value) this.dispatch(executeQueryAction({}));
   }
 
   execute(target: any) {
@@ -281,8 +283,8 @@ function QueryView(props: QueryViewProps) {
       !comp.children.isNewCreate.value
     ) {
       setTimeout(() => {
-        comp.dispatch(deferAction(executeQueryAction({})));
-      });
+        if (!comp.children.condition.unevaledValue || (comp.children.condition.nodeWithoutCache()  as AbstractNode<any>).evalCache.value.value) comp.dispatch(deferAction(executeQueryAction({})));
+      }, 300);
     }
   }, []);
 

@@ -14,7 +14,7 @@ import {
 } from "./selectInputConstants";
 import { formDataChildren, FormDataPropertyView } from "../formComp/formDataConstants";
 import { styleControl } from "comps/controls/styleControl";
-import { RadioStyle } from "comps/controls/styleControlConstants";
+import {  AnimationStyle, InputFieldStyle, LabelStyle, RadioStyle } from "comps/controls/styleControlConstants";
 import { dropdownControl } from "../../controls/dropdownControl";
 import { hiddenPropertyView, disabledPropertyView } from "comps/utils/propertyUtils";
 import { trans } from "i18n";
@@ -22,6 +22,7 @@ import { RefControl } from "comps/controls/refControl";
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { withDefault } from "@lowcoder-ee/index.sdk";
 
 export const RadioLayoutOptions = [
   { label: trans("radio.horizontal"), value: "horizontal" },
@@ -30,15 +31,18 @@ export const RadioLayoutOptions = [
 ] as const;
 
 export const RadioChildrenMap = {
+  defaultValue: stringExposingStateControl("value"),
   value: stringExposingStateControl("value"),
   label: LabelControl,
   disabled: BoolCodeControl,
   onEvent: ChangeEventHandlerControl,
   options: SelectInputOptionControl,
-  style: styleControl(RadioStyle),
+  style: styleControl(InputFieldStyle),
+  labelStyle:styleControl(LabelStyle),
   layout: dropdownControl(RadioLayoutOptions, "horizontal"),
   viewRef: RefControl<HTMLDivElement>,
-
+  inputFieldStyle:withDefault(styleControl(RadioStyle),{borderWidth: '1px'}),
+  animationStyle: styleControl(AnimationStyle),
   ...SelectInputValidationChildren,
   ...formDataChildren,
 };
@@ -46,6 +50,9 @@ export const RadioChildrenMap = {
 export const RadioPropertyView = (
   children: RecordConstructorToComp<
     typeof RadioChildrenMap & { hidden: typeof BoolCodeControl } & {
+      defaultValue:
+        | ReturnType<typeof stringExposingStateControl>
+        | ReturnType<typeof arrayStringExposingStateControl>;
       value:
         | ReturnType<typeof stringExposingStateControl>
         | ReturnType<typeof arrayStringExposingStateControl>;
@@ -55,7 +62,7 @@ export const RadioPropertyView = (
   <>
     <Section name={sectionNames.basic}>
       {children.options.propertyView({})}
-      {children.value.propertyView({ label: trans("prop.defaultValue") })}
+      {children.defaultValue.propertyView({ label: trans("prop.defaultValue") })}
     </Section>
 
     {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
@@ -88,7 +95,12 @@ export const RadioPropertyView = (
     )}
 
     {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+      <>
       <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
+      <Section name={sectionNames.labelStyle}>{children.labelStyle.getPropertyView()}</Section>
+      <Section name={sectionNames.inputFieldStyle}>{children.inputFieldStyle.getPropertyView()}</Section>
+      <Section name={sectionNames.animationStyle} hasTooltip={true}>{children.animationStyle.getPropertyView()}</Section>
+      </>
     )}
   </>
 );

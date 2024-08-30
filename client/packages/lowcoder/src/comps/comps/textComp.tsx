@@ -10,7 +10,7 @@ import { UICompBuilder } from "../generators";
 import { NameConfig, NameConfigHidden, withExposingConfigs } from "../generators/withExposing";
 import { markdownCompCss, TacoMarkDown } from "lowcoder-design";
 import { styleControl } from "comps/controls/styleControl";
-import { TextStyle, TextStyleType, heightCalculator, widthCalculator } from "comps/controls/styleControlConstants";
+import { AnimationStyle, AnimationStyleType, TextStyle, TextStyleType, heightCalculator, widthCalculator } from "comps/controls/styleControlConstants";
 import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { trans } from "i18n";
 import { alignWithJustifyControl } from "comps/controls/alignControl";
@@ -24,8 +24,10 @@ import { EditorContext } from "comps/editorState";
 const getStyle = (style: TextStyleType) => {
   return css`
     border-radius: ${(style.radius ? style.radius : "4px")};
-    border: ${(style.borderWidth ? style.borderWidth : "1px")} solid ${style.border};
+    border: ${(style.borderWidth ? style.borderWidth : "0px")} solid ${style.border};
     color: ${style.text};
+    text-transform:${style.textTransform} !important;
+    text-decoration:${style.textDecoration} !important;
     background-color: ${style.background};
     .markdown-body a {
       color: ${style.links};
@@ -34,7 +36,10 @@ const getStyle = (style: TextStyleType) => {
       margin: ${style.margin} !important;	
       padding: ${style.padding};	
       width: ${widthCalculator(style.margin)};	
-      height: ${heightCalculator(style.margin)};
+      font-family: ${style.fontFamily} !important;
+      font-style:${style.fontStyle} !important;
+      font-size: ${style.textSize} !important;
+      // height: ${heightCalculator(style.margin)};
       h1 {
         line-height: 1.5;
       }
@@ -54,6 +59,7 @@ const getStyle = (style: TextStyleType) => {
       h5,
       h6 {
         color: ${style.text};
+        font-weight: ${style.textWeight} !important;
       }
       img,
       pre {
@@ -66,13 +72,18 @@ const getStyle = (style: TextStyleType) => {
   `;
 };
 
-const TextContainer = styled.div<{ type: string; styleConfig: TextStyleType }>`
+const TextContainer = styled.div<{
+  $type: string;
+  $styleConfig: TextStyleType;
+  $animationStyle:AnimationStyleType;
+}>`
   height: 100%;
   overflow: auto;
   margin: 0;
+  ${props=>props.$animationStyle}
   ${(props) =>
-    props.type === "text" && "white-space:break-spaces;line-height: 1.9;"};
-  ${(props) => props.styleConfig && getStyle(props.styleConfig)}
+    props.$type === "text" && "white-space:break-spaces;line-height: 1.9;"};
+  ${(props) => props.$styleConfig && getStyle(props.$styleConfig)}
   display: flex;
   font-size: 13px;
   ${markdownCompCss};
@@ -108,7 +119,7 @@ const VerticalAlignmentOptions = [
 ] as const;
 
 
-let TextTmpComp = (function () {  
+let TextTmpComp = (function () {
 
   const childrenMap = {
     text: stringExposingStateControl(
@@ -120,19 +131,22 @@ let TextTmpComp = (function () {
     horizontalAlignment: alignWithJustifyControl(),
     verticalAlignment: dropdownControl(VerticalAlignmentOptions, "center"),
     style: styleControl(TextStyle),
-    margin: MarginControl,	
+    animationStyle: styleControl(AnimationStyle),
+    margin: MarginControl,
     padding: PaddingControl,
   };
   return new UICompBuilder(childrenMap, (props) => {
     const value = props.text.value;
     return (
       <TextContainer
-        type={props.type}
-        styleConfig={props.style}
+        $animationStyle={props.animationStyle}
+        $type={props.type}
+        $styleConfig={props.style}
         style={{
           justifyContent: props.horizontalAlignment,
           alignItems: props.autoHeight ? "center" : props.verticalAlignment,
           textAlign: props.horizontalAlignment,
+          rotate: props.style.rotation
         }}
       >
         {props.type === "markdown" ? <TacoMarkDown>{value}</TacoMarkDown> : value}
@@ -142,7 +156,6 @@ let TextTmpComp = (function () {
     .setPropertyViewFn((children) => {
       return (
         <>
-        
           <Section name={sectionNames.basic}>
             {children.type.propertyView({
               label: trans("value"),
@@ -157,7 +170,7 @@ let TextTmpComp = (function () {
               {hiddenPropertyView(children)}
             </Section>
           )}
-        
+
           {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
             <>
               <Section name={sectionNames.layout}>
@@ -174,6 +187,9 @@ let TextTmpComp = (function () {
               </Section>
               <Section name={sectionNames.style}>
                 {children.style.getPropertyView()}
+              </Section>
+              <Section name={sectionNames.animationStyle} hasTooltip={true}>
+                {children.animationStyle.getPropertyView()}
               </Section>
             </>
           )}

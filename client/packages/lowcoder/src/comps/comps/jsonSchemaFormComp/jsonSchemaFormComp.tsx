@@ -1,18 +1,17 @@
 import { withTheme } from '@rjsf/core';
-import { RJSFValidationError, ErrorListProps, UISchemaSubmitButtonOptions } from "@rjsf/utils";
+import type { RJSFValidationError, ErrorListProps, UISchemaSubmitButtonOptions } from "@rjsf/utils";
 import validator from "@rjsf/validator-ajv8";
 // import Ajv from "@rjsf/validator-ajv8";
-import { Button } from "antd";
+import { default as Button } from "antd/es/button";
 import { BoolControl } from "comps/controls/boolControl";
 import { jsonObjectExposingStateControl } from "comps/controls/codeStateControl";
 import { styleControl } from "comps/controls/styleControl";
-import { JsonSchemaFormStyle, JsonSchemaFormStyleType } from "comps/controls/styleControlConstants";
+import { AnimationStyle, AnimationStyleType, JsonSchemaFormStyle, type JsonSchemaFormStyleType } from "comps/controls/styleControlConstants";
 import { depsConfig, NameConfigHidden, withExposingConfigs } from "comps/generators/withExposing";
 import { withMethodExposing } from "comps/generators/withMethodExposing";
-import { ValueFromOption } from "lowcoder-design";
-import { i18n } from "lowcoder-core";
+import type { ValueFromOption } from "lowcoder-design";
 import { i18nObjs, trans } from "i18n";
-import { JSONSchema7 } from "json-schema";
+import type { JSONSchema7 } from "json-schema";
 import styled from "styled-components";
 import { toBoolean, toNumber, toString } from "util/convertUtils";
 import { Section, sectionNames } from "lowcoder-design";
@@ -33,7 +32,11 @@ const Form = withTheme(Theme);
 
 const EventOptions = [submitEvent] as const;
 
-const Container = styled.div<{ $style: JsonSchemaFormStyleType }>`
+const Container = styled.div<{
+  $style: JsonSchemaFormStyleType;
+  $animationStyle: AnimationStyleType;
+}>`
+  ${(props) => props.$animationStyle}
   background: ${(props) => props.$style.background};
   border: 1px solid ${(props) => props.$style.border};
   padding: 15px;
@@ -189,6 +192,7 @@ let FormBasicComp = (function () {
     data: jsonObjectExposingStateControl("data", i18nObjs.jsonForm.defaultFormData),
     onEvent: eventHandlerControl(EventOptions),
     style: styleControl(JsonSchemaFormStyle),
+    animationStyle: styleControl(AnimationStyle),
   };
   return new UICompBuilder(childrenMap, (props) => {
     // rjsf 4.20 supports ui:submitButtonOptions, but if the button is customized, it will not take effect. Here we implement it ourselves
@@ -197,7 +201,7 @@ let FormBasicComp = (function () {
     ] as UISchemaSubmitButtonOptions;
 
     return (
-      <Container $style={props.style}>
+      <Container $style={props.style} $animationStyle={props.animationStyle}>
         <ErrorBoundary>
           <Form
             validator={validator}
@@ -321,10 +325,13 @@ let FormBasicComp = (function () {
 
           {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
             <>
-              <Section name={sectionNames.style}>
-                {children.style.getPropertyView()}
+            <Section name={sectionNames.style}>
+              {children.style.getPropertyView()}
+            </Section>
+            <Section name={sectionNames.animationStyle} hasTooltip={true}>
+              {children.animationStyle.getPropertyView()}
               </Section>
-            </>
+              </>
           )}
 
         </>

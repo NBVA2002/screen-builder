@@ -10,18 +10,32 @@ import { sdkConfig } from "constants/sdkConfig";
 import _ from "lodash";
 
 let axiosIns: AxiosInstance | null = null;
+let haveApiKey = false;
+
+declare global {
+  interface Window {
+    LOWCODER_API_KEY: string;
+  }
+}
 
 function getAxiosInstance() {
-  if (axiosIns) {
+  if (axiosIns && (haveApiKey || !localStorage.getItem("LOWCODER_API_KEY"))) {
     return axiosIns;
   }
 
   const apiRequestConfig: AxiosRequestConfig = {
     baseURL: `${_.trimEnd(sdkConfig.baseURL || SERVER_HOST, "/")}/api/`,
     timeout: REQUEST_TIMEOUT_MS,
-    headers: API_REQUEST_HEADERS,
+    headers: {
+      ...API_REQUEST_HEADERS,
+      ...(localStorage.getItem("LOWCODER_API_KEY")) && {Authorization: `Bearer ${localStorage.getItem("LOWCODER_API_KEY")}`}
+    },
     withCredentials: true,
   };
+
+  if (localStorage.getItem("LOWCODER_API_KEY")) {
+    haveApiKey = true
+  }
 
   const axiosInstance: AxiosInstance = axios.create(apiRequestConfig);
   axiosInstance.interceptors.request.use(apiRequestInterceptor);

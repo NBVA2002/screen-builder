@@ -5,6 +5,7 @@ import { StringControl } from "comps/controls/codeControl";
 import { booleanExposingStateControl } from "comps/controls/codeStateControl";
 import { eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { styleControl } from "comps/controls/styleControl";
+import { HorizontalAlignmentControl } from "comps/controls/dropdownControl";
 import { ModalStyle, ModalStyleType } from "comps/controls/styleControlConstants";
 import { withMethodExposing } from "comps/generators/withMethodExposing";
 import { BackgroundColorContext } from "comps/utils/backgroundColorContext";
@@ -13,7 +14,7 @@ import { Layers } from "constants/Layers";
 import { HintPlaceHolder, Modal, Section, sectionNames } from "lowcoder-design";
 import { trans } from "i18n";
 import { changeChildAction } from "lowcoder-core";
-import { CSSProperties, useCallback } from "react";
+import {CSSProperties, useCallback, useContext} from "react";
 import { ResizeHandle } from "react-resizable";
 import styled, { css } from "styled-components";
 import { useUserViewMode } from "util/hooks";
@@ -21,29 +22,62 @@ import { isNumeric } from "util/stringUtils";
 import { NameConfig, withExposingConfigs } from "../generators/withExposing";
 import { BoolControl } from "comps/controls/boolControl";
 import { withDefault } from "comps/generators";
+import {PreloadIdContext} from "@lowcoder-ee/comps/comps/preLoadComp";
 
 const EventOptions = [
   { label: trans("modalComp.close"), value: "close", description: trans("modalComp.closeDesc") },
 ] as const;
 
-const DEFAULT_WIDTH = "60%";
-const DEFAULT_HEIGHT = 222;
-const DEFAULT_PADDING = 16;
-
 const getStyle = (style: ModalStyleType) => {
   return css`
     .ant-modal-content {
       border-radius: ${style.radius};
-      border: 1px solid ${style.border};
+      border: ${style.borderWidth} solid ${style.border};
       overflow: hidden;
       background-color: ${style.background};
-
+      ${style.backgroundImage ? `background-image: url(${style.backgroundImage}) !important; ` : ';'}
+      ${style.backgroundImageRepeat ? `background-repeat: ${style.backgroundImageRepeat};` : 'no-repeat;'}
+      ${style.backgroundImageSize ? `background-size: ${style.backgroundImageSize};` : 'cover'}
+      ${style.backgroundImagePosition ? `background-position: ${style.backgroundImagePosition};` : 'center;'}
+      ${style.backgroundImageOrigin ? `background-origin: ${style.backgroundImageOrigin};` : 'padding-box;'}
+      margin: ${style.margin};
       .ant-modal-body > .react-resizable > .react-grid-layout {
         background-color: ${style.background};
       }
+      > .ant-modal-body {
+        background-color: ${style.background};
+      }
+    }
+    .ant-modal-close {
+      inset-inline-end: 10px !important;
+      top: 10px;
     }
   `;
 };
+
+const StyledModal = styled(Modal)<{$titleAlign?: string}>`
+  .ant-modal-title {
+    margin: 0px 20px !important;
+    text-align: ${(props) => props.$titleAlign || "center"};
+  }
+`;
+
+const DEFAULT_WIDTH = "60%";
+const DEFAULT_HEIGHT = 222;
+
+function extractMarginValues(style: ModalStyleType) {
+  // Regular expression to match numeric values with units (like px, em, etc.)
+  const regex = /\d+px|\d+em|\d+%|\d+vh|\d+vw/g;
+  // Extract the values using the regular expression
+  let values = style.padding.match(regex);
+  let valuesarray: number[] = [];
+  // If only one value is found, duplicate it to simulate uniform margin
+  if (values && values.length === 1) {
+    valuesarray = [parseInt(values[0]), parseInt(values[0])];
+  }
+  // Return the array of values
+  return valuesarray;
+}
 
 const ModalStyled = styled.div<{ $style: ModalStyleType }>`
   ${(props) => props.$style && getStyle(props.$style)}
@@ -67,6 +101,8 @@ let TmpModalComp = (function () {
       width: StringControl,
       height: StringControl,
       autoHeight: AutoHeightControl,
+      title: StringControl,
+      titleAlign: HorizontalAlignmentControl,
       style: styleControl(ModalStyle),
       maskClosable: withDefault(BoolControl, true),
       showMask: withDefault(BoolControl, true),
@@ -101,19 +137,31 @@ let TmpModalComp = (function () {
         },
         [dispatch]
       );
+      let paddingValues = [10, 10];
+      if (props.style.padding != undefined) {
+        const extractedValues = extractMarginValues(props.style);
+        if (extractedValues !== null) {
+          paddingValues = extractedValues;
+        } 
+      }
+
+      const getContainer = useModalContainer();
+
       return (
         <BackgroundColorContext.Provider value={props.style.background}>
           <ModalWrapper>
-            <Modal
+            <StyledModal
               height={height}
               resizeHandles={resizeHandles}
               onResizeStop={onResizeStop}
               open={props.visible.value}
               maskClosable={props.maskClosable}
               focusTriggerAfterClose={false}
-              getContainer={() => document.querySelector(`#${CanvasContainerID}`) || document.body}
+              getContainer={getContainer}
               footer={null}
-              bodyStyle={bodyStyle}
+              styles={{body: bodyStyle}}
+              title={props.title}
+              $titleAlign={props.titleAlign}
               width={width}
               onCancel={(e) => {
                 props.visible.onChange(false);
@@ -124,16 +172,18 @@ let TmpModalComp = (function () {
               zIndex={Layers.modal}
               modalRender={(node) => <ModalStyled $style={props.style}>{node}</ModalStyled>}
               mask={props.showMask}
+              className={props.className as string}
+              data-testid={props.dataTestId as string}
             >
               <InnerGrid
                 {...otherContainerProps}
                 items={gridItemCompToGridItems(items)}
                 autoHeight={props.autoHeight}
-                minHeight={DEFAULT_HEIGHT - DEFAULT_PADDING * 2 + "px"}
-                containerPadding={[DEFAULT_PADDING, DEFAULT_PADDING]}
+                minHeight={paddingValues ? DEFAULT_HEIGHT - paddingValues[0] * 2 + "px" : ""}
+                containerPadding={paddingValues ? [paddingValues[0] ?? 0, paddingValues[1] ?? 0] : [24,24]}
                 hintPlaceholder={HintPlaceHolder}
               />
-            </Modal>
+            </StyledModal>
           </ModalWrapper>
         </BackgroundColorContext.Provider>
       );
@@ -142,6 +192,8 @@ let TmpModalComp = (function () {
     .setPropertyViewFn((children) => (
       <>
         <Section name={sectionNames.basic}>
+          {children.title.propertyView({ label: trans("modalComp.title") })}
+          {children.title.getView() && children.titleAlign.propertyView({ label: trans("modalComp.titleAlign"), radioButton: true })}
           {children.autoHeight.getPropertyView()}
           {!children.autoHeight.getView() &&
             children.height.propertyView({
@@ -200,3 +252,18 @@ TmpModalComp = withMethodExposing(TmpModalComp, [
 export const ModalComp = withExposingConfigs(TmpModalComp, [
   new NameConfig("visible", trans("modalComp.visibleDesc")),
 ]);
+
+export const useModalContainer = () => {
+  const preloadId = useContext(PreloadIdContext);
+
+  return useCallback(() => {
+    const editorCanvas = document.querySelector(`#${CanvasContainerID}`) ?? document.body;
+    let portalContainer = editorCanvas.querySelector(`:scope > #${preloadId}`)
+    if (portalContainer) return portalContainer as HTMLElement
+
+    portalContainer = document.createElement('div')
+    portalContainer.setAttribute("id", preloadId ?? "")
+    editorCanvas.appendChild(portalContainer)
+    return portalContainer as HTMLElement;
+  }, [preloadId]);
+}

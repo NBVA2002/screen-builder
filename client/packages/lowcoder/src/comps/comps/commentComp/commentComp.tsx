@@ -31,6 +31,7 @@ import { EditorContext } from "comps/editorState";
 
 // Introducing styles
 import {
+  AnimationStyle,
   CommentStyle,
   heightCalculator,
   widthCalculator,
@@ -53,14 +54,18 @@ import {
   checkUserInfoData,
   checkMentionListData,
 } from "./commentConstants";
-import { Avatar, List, Button, Mentions, Tooltip } from "antd";
+import { default as Avatar } from "antd/es/avatar";
+import { default as List } from "antd/es/list";
+import { default as Button } from "antd/es/button";
+import { default as Mentions } from "antd/es/mentions";
+import { default as Tooltip } from "antd/es/tooltip";
 import VirtualList, { ListRef } from "rc-virtual-list";
 import _ from "lodash";
 import relativeTime from "dayjs/plugin/relativeTime";
 import dayjs from "dayjs";
 // import "dayjs/locale/zh-cn";
 import { getInitialsAndColorCode } from "util/stringUtils";
-import { CloseOutlined } from "@ant-design/icons";
+import { default as CloseOutlined } from "@ant-design/icons/CloseOutlined";
 dayjs.extend(relativeTime);
 // dayjs.locale("zh-cn");
 
@@ -96,6 +101,7 @@ const childrenMap = {
   }),
   onEvent: eventHandlerControl(EventOptions),
   style: styleControl(CommentStyle),
+  animationStyle: styleControl(AnimationStyle),
   commentList: jsonValueExposingStateControl("commentList", []),
   deletedItem: jsonValueExposingStateControl("deletedItem", []),
   submitedItem: jsonValueExposingStateControl("submitedItem", []),
@@ -121,6 +127,7 @@ const CommentCompBase = (
     userInfo,
     placeholder,
     deleteAble,
+    animationStyle,
   } = props;
   type PrefixType = "@" | keyof typeof mentionList;
   // Used to save the consolidated list of mentions
@@ -229,7 +236,11 @@ const CommentCompBase = (
         width: widthCalculator(style.margin ?? "3px"),
         height: heightCalculator(style.margin ?? "3px"),
         background: style.background,
-        borderRadius: style.radius,
+      borderRadius: style.radius,
+      animation: animationStyle.animation,
+      animationDelay: animationStyle.animationDelay,
+      animationDuration: animationStyle.animationDuration,
+        animationIterationCount:animationStyle.animationIterationCount
       }}>
       <div
         style={{
@@ -409,8 +420,12 @@ let CommentBasicComp = (function () {
             {children.placeholder.propertyView({
               label: trans("comment.placeholderDec"),
             })}
-          </Section><Section name={sectionNames.style}>
+          </Section>
+            <Section name={sectionNames.style}>
               {children.style.getPropertyView()}
+            </Section>
+            <Section name={sectionNames.animationStyle} hasTooltip={true}>
+              {children.animationStyle.getPropertyView()}
             </Section></>
         )}
 

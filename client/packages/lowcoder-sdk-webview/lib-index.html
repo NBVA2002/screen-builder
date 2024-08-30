@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React + TS</title>
+    <script type="importmap">
+      {
+          "imports": {
+              "react": "https://esm.sh/react@18.2.0",
+              "react-dom": "https://esm.sh/react-dom@18.2.0"
+          }
+      }
+    </script>
+    <script>
+      window.process = {
+        env: {
+          NODE_ENV: "production",
+        },
+      };
+    </script>
+    <script
+            type="module"
+            src="./dist/lowcoder-sdk.js"></script>
+    <script type="module">
+      import "./theme.css"
+      import "lowcoder-sdk/dist/style.css"
+    </script>
+  </head>
+  <body style="background: #0a3069">
+  <h1 class="demo-title">Use in vanilla app</h1>
+  <div id="app1" class="demo"></div>
+  <div id="app1-ops" class="ops">
+    <button data-key="setModuleInputs" onclick="document.getElementById('view').setAttribute('app-id', '666a6017c1900475b140af9e')">setModuleInputs</button>
+    <button data-key="invokeMethod" onclick="document.getElementById('view').setAttribute('app-id', '664dc81672172e4833a78ea5')">invokeMethod</button>
+  </div>
+
+  <h1 class="demo-title">Use in React app</h1>
+  <div id="app2" class="demo"></div>
+  <screen-renderer id="view" base-url="https://screenbuilder.smartcity-cloud.org/"></screen-renderer>
+  </body>
+</html>

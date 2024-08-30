@@ -1,4 +1,4 @@
-import { Modal as AntdModal, ModalProps as AntdModalProps } from "antd";
+import { default as AntdModal, ModalProps as AntdModalProps } from "antd/es/modal";
 import { useEffect, useState } from "react";
 import { Resizable, ResizeHandle } from "react-resizable";
 import { useResizeDetector } from "react-resize-detector";
@@ -32,7 +32,7 @@ export function Modal(props: ModalProps) {
     resizeHandles,
     width: modalWidth,
     height: modalHeight,
-    bodyStyle,
+    styles,
     children,
     ...otherProps
   } = props;
@@ -52,8 +52,14 @@ export function Modal(props: ModalProps) {
   // log.info("Modal. modalWidth: ", modalWidth, " width: ", size?.w, " detectWidth: ", detectWidth);
   return (
     <AntdModal
+      centered
       width={width ?? modalWidth}
-      bodyStyle={{ height: height ?? modalHeight, ...bodyStyle }}
+      styles={{ 
+        body: {
+          height: height ?? modalHeight,
+          ...styles?.body,
+        }
+      }}
       {...otherProps}
     >
       <Resizable

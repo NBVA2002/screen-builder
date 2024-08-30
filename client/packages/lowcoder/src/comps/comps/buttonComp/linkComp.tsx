@@ -1,9 +1,9 @@
-import { Button } from "antd";
+import { default as Button } from "antd/es/button";
 import { ButtonCompWrapper, buttonRefMethods } from "comps/comps/buttonComp/buttonCompConstants";
 import { BoolCodeControl, StringControl } from "comps/controls/codeControl";
 import { ButtonEventHandlerControl } from "comps/controls/eventHandlerControl";
 import { styleControl } from "comps/controls/styleControl";
-import { LinkStyle, LinkStyleType } from "comps/controls/styleControlConstants";
+import { AnimationStyle, AnimationStyleType, LinkStyle, LinkStyleType } from "comps/controls/styleControlConstants";
 import { withDefault } from "comps/generators";
 import { migrateOldData } from "comps/generators/simpleGenerators";
 import { UICompBuilder } from "comps/generators/uiCompBuilder";
@@ -23,9 +23,34 @@ import { RefControl } from "comps/controls/refControl";
 import { EditorContext } from "comps/editorState";
 import React, { useContext } from "react";
 
-const Link = styled(Button)<{ $style: LinkStyleType }>`
-  ${(props) => `color: ${props.$style.text}; margin: ${props.$style.margin}; padding: ${props.$style.padding}; font-size: ${props.$style.textSize};`}
-  &.ant-btn {
+const Link = styled(Button)<{
+  $style: LinkStyleType;
+  $animationStyle: AnimationStyleType;
+}>`
+  ${(props) => props.$animationStyle}
+  ${(props) => `
+    color: ${props.$style.text};
+    rotate: ${props.$style.rotation};
+    margin: ${props.$style.margin};
+    padding: ${props.$style.padding};
+    font-size: ${props.$style.textSize};
+    font-style:${props.$style.fontStyle};
+    font-family:${props.$style.fontFamily};
+    font-weight:${props.$style.textWeight};
+    border: ${props.$style.borderWidth} ${props.$style.borderStyle} ${props.$style.border};
+    border-radius:${props.$style.radius ? props.$style.radius:'0px'};
+    text-transform:${props.$style.textTransform ? props.$style.textTransform:''};
+    text-decoration:${props.$style.textDecoration ? props.$style.textDecoration:''} !important;
+    background-color: ${props.$style.background};
+    &:hover {
+      color: ${props.$style.hoverText} !important;
+    }
+    &:active {
+      color: ${props.$style.activeText} !important;
+    }
+  `}
+
+  &.ant-btn { 
     display: inline-flex;
     align-items: center;
     > span {
@@ -61,6 +86,7 @@ const LinkTmpComp = (function () {
     disabled: BoolCodeControl,
     loading: BoolCodeControl,
     style: migrateOldData(styleControl(LinkStyle), fixOldData),
+    animationStyle:styleControl(AnimationStyle),
     prefixIcon: IconControl,
     suffixIcon: IconControl,
     viewRef: RefControl<HTMLElement>,
@@ -71,6 +97,7 @@ const LinkTmpComp = (function () {
     return (
       <ButtonCompWrapper disabled={props.disabled}>
         <Link
+          $animationStyle={props.animationStyle}
           ref={props.viewRef}
           $style={props.style}
           loading={props.loading}
@@ -103,15 +130,18 @@ const LinkTmpComp = (function () {
               {hiddenPropertyView(children)}
               {loadingPropertyView(children)}
             </Section>
-            <Section name={sectionNames.advanced}>
-              {children.prefixIcon.propertyView({ label: trans("button.prefixIcon") })}
-              {children.suffixIcon.propertyView({ label: trans("button.suffixIcon") })}
-            </Section></>
+              <Section name={sectionNames.advanced}>
+                {children.prefixIcon.propertyView({ label: trans("button.prefixIcon") })}
+                {children.suffixIcon.propertyView({ label: trans("button.suffixIcon") })}
+              </Section></>
           )}
 
-        {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
-          <><Section name={sectionNames.style}>{children.style.getPropertyView()}</Section></>
-        )}
+          {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+            <>
+              <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
+              <Section name={sectionNames.animationStyle} hasTooltip={true}>{children.animationStyle.getPropertyView()}</Section>
+            </>
+          )}
         </>
       );
     })

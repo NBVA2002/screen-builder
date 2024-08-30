@@ -77,6 +77,7 @@ export class GridCompOperator {
     return true;
   }
 
+  // FALK TODO: How can we enable Copy and Paste of components across Browser Tabs / Windows?
   static pasteComp(editorState: EditorState) {
     if (!this.copyComps || _.size(this.copyComps) <= 0 || !this.sourcePositionParams) {
       messageInstance.info(trans("gridCompOperator.selectCompFirst"));
@@ -173,6 +174,7 @@ export class GridCompOperator {
       this.doDelete(editorState, compRecords) &&
       messageInstance.info(trans("gridCompOperator.deleteCompsSuccess", { undoKey }));
     };
+
     if (compNum > 1) {
       CustomModal.confirm({
         title: trans("gridCompOperator.deleteCompsTitle"),

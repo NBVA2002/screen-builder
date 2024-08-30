@@ -8,6 +8,7 @@ import couchdbPlugin from "./couchdb";
 import wooCommercePlugin from "./woocommerce";
 import openAiPlugin from "./openAi";
 import athenaPlugin from "./athena";
+import duckdbPlugin from "./duckdb";
 import lambdaPlugin from "./lambda";
 import googleCloudStorage from "./googleCloudStorage";
 import stripePlugin from "./stripe";
@@ -31,6 +32,8 @@ import faunaPlugin from "./fauna";
 import huggingFaceInferencePlugin from "./huggingFaceInference";
 import didPlugin from "./did";
 import bigQueryPlugin from "./bigQuery";
+import appConfigPlugin from "./appconfig";
+import tursoPlugin from "./turso";
 
 let plugins: (DataSourcePlugin | DataSourcePluginFactory)[] = [
   s3Plugin,
@@ -42,6 +45,7 @@ let plugins: (DataSourcePlugin | DataSourcePluginFactory)[] = [
   wooCommercePlugin,
   openAiPlugin,
   athenaPlugin,
+  duckdbPlugin,
   lambdaPlugin,
   googleCloudStorage,
   stripePlugin,
@@ -64,12 +68,14 @@ let plugins: (DataSourcePlugin | DataSourcePluginFactory)[] = [
   gitlabPlugin,
   faunaPlugin,
   didPlugin,
-  bigQueryPlugin
+  bigQueryPlugin,
+  appConfigPlugin,
+  tursoPlugin,
 ];
 
 try {
   plugins = require("../ee/plugins").default;
   console.info("using ee plugins");
-} catch {}
+} catch { }
 
 export default plugins;

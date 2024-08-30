@@ -51,7 +51,7 @@ import { lastValueIfEqual, shallowEqual } from "util/objectUtils";
 import { IContainer } from "../containerBase";
 import { getSelectedRowKeys } from "./selectionControl";
 import { compTablePropertyView } from "./tablePropertyView";
-import { RowColorComp, TableChildrenView, TableInitComp } from "./tableTypes";
+import { RowColorComp, RowHeightComp, TableChildrenView, TableInitComp } from "./tableTypes";
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
@@ -62,6 +62,10 @@ export class TableImplComp extends TableInitComp implements IContainer {
   readonly columnAggrData: ColumnsAggrData = {};
 
   override autoHeight(): boolean {
+    return this.children.autoHeight.getView();
+  }
+
+  getTableAutoHeight() {
     return this.children.autoHeight.getView();
   }
   
@@ -176,7 +180,6 @@ export class TableImplComp extends TableInitComp implements IContainer {
 
   override reduce(action: CompAction): this {
     let comp = super.reduce(action);
-
     let dataChanged = false;
     if (action.type === CompActionTypes.UPDATE_NODES_V2) {
       const nextRowExample = tableDataRowExample(comp.children.data.getView());
@@ -189,6 +192,17 @@ export class TableImplComp extends TableInitComp implements IContainer {
           "rowColor",
           comp.children.rowColor.reduce(
             RowColorComp.changeContextDataAction({
+              currentRow: nextRowExample,
+              currentIndex: 0,
+              currentOriginalIndex: 0,
+              columnTitle: nextRowExample ? Object.keys(nextRowExample)[0] : undefined,
+            })
+          )
+        );
+        comp = comp.setChild(
+          "rowHeight",
+          comp.children.rowHeight.reduce(
+            RowHeightComp.changeContextDataAction({
               currentRow: nextRowExample,
               currentIndex: 0,
               currentOriginalIndex: 0,
@@ -305,10 +319,18 @@ export class TableImplComp extends TableInitComp implements IContainer {
       filter: this.children.toolbar.children.filter.node(),
       showFilter: this.children.toolbar.children.showFilter.node(),
     };
+    let context = this;
     const filteredDataNode = withFunction(fromRecord(nodes), (input) => {
       const { data, searchValue, filter, showFilter } = input;
       const filteredData = filterData(data, searchValue.value, filter, showFilter.value);
       // console.info("filterNode. data: ", data, " filter: ", filter, " filteredData: ", filteredData);
+      // if data is changed on search then trigger event
+      if(Boolean(searchValue.value) && data.length !== filteredData.length) {
+        const onEvent = context.children.onEvent.getView();
+        setTimeout(() => {
+          onEvent("dataSearch");
+        });
+      }
       return filteredData.map((row) => tranToTableRecord(row, row[OB_ROW_ORI_INDEX]));
     });
     return lastValueIfEqual(this, "filteredDataNode", [filteredDataNode, nodes] as const, (a, b) =>
@@ -784,6 +806,18 @@ export const TableComp = withExposingConfigs(TableTmpComp, [
       return input.filter;
     },
     trans("table.filterDesc")
+  ),
+  new DepsConfig(
+    "selectedCell",
+    (children) => {
+      return {
+        selectedCell: children.selectedCell.node(),
+      };
+    },
+    (input) => {
+      return input.selectedCell;
+    },
+    trans("table.selectedCellDesc")
   ),
   new NameConfig("data", trans("table.dataDesc")),
 ]);

@@ -1,4 +1,4 @@
-import { InputRef, message } from "antd";
+import { InputRef } from "antd/es/input";
 import {
   CommonSettingResponseData,
   SetCommonSettingPayload,
@@ -6,10 +6,9 @@ import {
   ThemeType,
 } from "api/commonSettingApi";
 import history from "util/history";
-import { CodeEditor } from "base/codeEditor";
 import { BASE_URL, THEME_SETTING } from "constants/routesURL";
 import ColorPicker, { configChangeParams } from "../../../../components/ColorPicker";
-import React from "react";
+import React, { lazy } from "react";
 import { connect } from "react-redux";
 import { fetchCommonSettings, setCommonSettings } from "redux/reduxActions/commonSettingsActions";
 import { AppState } from "redux/reducers";
@@ -32,7 +31,12 @@ import { Prompt } from "react-router";
 import { HeaderBack } from "pages/setting/permission/styledComponents";
 import dsl from "./previewDsl";
 import chartDsl from "./chartPreviewDsl";
-import { messageInstance } from "lowcoder-design";
+import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
+
+const CodeEditor = lazy(
+  () => import("base/codeEditor/codeEditor")
+    .then(module => ({default: module.CodeEditor}))
+)
 
 type LocationProp = {
   theme: ThemeDetail;

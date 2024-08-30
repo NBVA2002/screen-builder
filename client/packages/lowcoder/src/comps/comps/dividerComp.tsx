@@ -1,4 +1,4 @@
-import { Divider, DividerProps } from "antd";
+import { default as Divider, DividerProps } from "antd/es/divider";
 import { StringControl } from "comps/controls/codeControl";
 import { BoolControl } from "comps/controls/boolControl";
 import { alignControl } from "comps/controls/alignControl";
@@ -8,7 +8,7 @@ import { Section, sectionNames } from "lowcoder-design";
 import _ from "lodash";
 import styled from "styled-components";
 import { styleControl } from "comps/controls/styleControl";
-import { DividerStyle, DividerStyleType, heightCalculator, widthCalculator } from "comps/controls/styleControlConstants";
+import { AnimationStyle, AnimationStyleType, DividerStyle, DividerStyleType, heightCalculator, widthCalculator } from "comps/controls/styleControlConstants";
 import { migrateOldData } from "comps/generators/simpleGenerators";
 import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { trans } from "i18n";
@@ -16,35 +16,46 @@ import { trans } from "i18n";
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
 
-type IProps = DividerProps & { $style: DividerStyleType; dashed: boolean };
+type IProps = DividerProps & {
+  $style: DividerStyleType;
+  dashed: boolean;
+  $animationStyle:AnimationStyleType;
+};
 
 // TODO: find out how to set border style when text is active
 // TODO: enable type "vertical" https://ant.design/components/divider
 
-const StyledDivider = styled(Divider)<IProps>`
+const StyledDivider = styled(Divider) <IProps>`
   margin-top: 3.5px;
+  rotate:${props=>props.$style.rotation};
   .ant-divider-inner-text {
     height: 32px;
     display: flex;
     align-items: center;
     font-size: ${(props) => props.$style.textSize};
+    font-weight: ${(props) => props.$style.textWeight};
+    font-family: ${(props) => props.$style.fontFamily};
+    text-transform:${(props)=>props.$style.textTransform};
+    text-decoration:${(props)=>props.$style.textDecoration};
+    font-style:${(props) => props.$style.fontStyle}
   }
+  ${props=>props.$animationStyle}
   min-width: 0;	
-  width: ${(props) => {	
-    return widthCalculator(props.$style.margin);	
+  width: ${(props) => {
+    return widthCalculator(props.$style.margin);
   }};	
-  min-height: ${(props) => {	
-    return heightCalculator(props.$style.margin);	
+  min-height: ${(props) => {
+    return heightCalculator(props.$style.margin);
   }};	
-  margin: ${(props) => {	
-    return props.$style.margin;	
+  margin: ${(props) => {
+    return props.$style.margin;
   }};	
   padding: ${(props) => props.$style.padding};
-  
-  border-top: ${(props) => (props.$style.borderWidth ? props.$style.borderWidth : "1px")} ${(props) => (props.dashed ? "dashed" : "solid")} ${(props) => props.$style.color};
-
+  border-radius:${props=>props.$style.radius};
+  border-top: ${(props) => (props.$style.borderWidth && props.$style.borderWidth != "0px" ? props.$style.borderWidth : "1px")} ${(props) => props.$style.borderStyle} ${(props) => props.$style.border};
+""
   .ant-divider-inner-text::before, .ant-divider-inner-text::after {
-    border-block-start: ${(props) => (props.$style.borderWidth ? props.$style.borderWidth : "1px")} ${(props) => (props.dashed ? "dashed" : "solid")} ${(props) => props.$style.color} !important;
+    border-block-start: ${(props) => (props.$style.borderWidth && props.$style.borderWidth != "0px" ? props.$style.borderWidth : "1px")} ${(props) => (props.dashed ? "dashed" : "solid")} ${(props) => props.$style.border} !important;
     border-block-start-color: inherit;
     border-block-end: 0;
   }
@@ -61,6 +72,7 @@ const childrenMap = {
   dashed: BoolControl,
   align: alignControl(),
   style: styleControl(DividerStyle),
+  animationStyle: styleControl(AnimationStyle),
 };
 
 function fixOldStyleData(oldData: any) {
@@ -76,11 +88,18 @@ function fixOldStyleData(oldData: any) {
   return oldData;
 }
 
+
+
 // Compatible with historical style data 2022-8-26
 export const DividerComp = migrateOldData(
   new UICompBuilder(childrenMap, (props) => {
     return (
-      <StyledDivider orientation={props.align} dashed={props.dashed} $style={props.style}>
+      <StyledDivider
+        orientation={props.align}
+        dashed={props.dashed}
+        $style={props.style}
+        $animationStyle={props.animationStyle}
+      >
         {props.title}
       </StyledDivider>
     );
@@ -110,6 +129,9 @@ export const DividerComp = migrateOldData(
               <Section name={sectionNames.style}>
                 {children.dashed.propertyView({ label: trans("divider.dashed") })}
                 {children.style.getPropertyView()}
+              </Section>
+              <Section name={sectionNames.animationStyle}hasTooltip={true}>
+                {children.animationStyle.getPropertyView()}
               </Section>
             </>
           )}

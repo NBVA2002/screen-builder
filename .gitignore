@@ -5,5 +5,13 @@ client/.yarn/cache/*.zip
 server/node-service/.yarn/cache/*.zip
 .metadata/
 .DS_Store
-/client/node_modules
-client/packages/lowcoder/vite.config.mts.timestamp-*
+client/node_modules/
+client/packages/lowcoder-plugin-demo/.yarn/install-state.gz
+client/packages/lowcoder-plugin-demo/yarn.lock
+client/packages/lowcoder-plugin-demo/.yarn/cache/@types-node-npm-16.18.68-56f72825c0-094ae9ed80.zip
+application-dev.yml
+server/api-service/lowcoder-server/src/main/resources/application-lowcoder.yml
+server/api-service/lowcoder-server/src/main/resources/application-debug.yaml
+.vscode/settings.json
+.vscode/launch.json
+server/api-service/lowcoder-server/src/main/resources/application-dev-localhost.yaml

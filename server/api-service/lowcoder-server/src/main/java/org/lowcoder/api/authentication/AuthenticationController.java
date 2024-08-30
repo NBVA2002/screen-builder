@@ -1,6 +1,7 @@
 package org.lowcoder.api.authentication;
 
 import java.util.List;
+import java.util.Map;
 
 import org.lowcoder.api.authentication.dto.APIKeyRequest;
 import org.lowcoder.api.authentication.dto.AuthConfigRequest;
@@ -14,7 +15,9 @@ import org.lowcoder.api.util.BusinessEventPublisher;
 import org.lowcoder.domain.authentication.FindAuthConfig;
 import org.lowcoder.domain.user.model.APIKey;
 import org.lowcoder.sdk.auth.AbstractAuthConfig;
+import org.lowcoder.sdk.auth.Oauth2GenericAuthConfig;
 import org.lowcoder.sdk.util.CookieHelper;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -46,7 +49,7 @@ public class AuthenticationController implements AuthenticationEndpoints
                                                  ServerWebExchange exchange) {
         return authenticationApiService.authenticateByForm(formLoginRequest.loginId(), formLoginRequest.password(),
                         formLoginRequest.source(), formLoginRequest.register(), formLoginRequest.authId(), orgId)
-                .flatMap(user -> authenticationApiService.loginOrRegister(user, exchange, invitationId))
+                .flatMap(user -> authenticationApiService.loginOrRegister(user, exchange, invitationId, Boolean.FALSE))
                 .thenReturn(ResponseView.success(true));
     }
 
@@ -58,12 +61,31 @@ public class AuthenticationController implements AuthenticationEndpoints
             @RequestParam(required = false) String authId,
             @RequestParam(required = false) String source,
             @RequestParam String code,
+            @RequestParam(required = false, defaultValue = "false") Boolean isAccessToken,
             @RequestParam(required = false) String invitationId,
             @RequestParam String redirectUrl,
             @RequestParam String orgId,
             ServerWebExchange exchange) {
+        if (isAccessToken)
+            return authenticationApiService.authenticateByAccessToken(authId, source, code, redirectUrl, orgId)
+                    .flatMap(authUser -> authenticationApiService.loginOrRegister(authUser, exchange, invitationId, Boolean.FALSE))
+                    .thenReturn(ResponseView.success(true));
+
         return authenticationApiService.authenticateByOauth2(authId, source, code, redirectUrl, orgId)
-                .flatMap(authUser -> authenticationApiService.loginOrRegister(authUser, exchange, invitationId))
+                .flatMap(authUser -> authenticationApiService.loginOrRegister(authUser, exchange, invitationId, Boolean.FALSE))
+                .thenReturn(ResponseView.success(true));
+    }
+
+    @Override
+    public Mono<ResponseView<Boolean>> linkAccountWithThirdParty(
+            @RequestParam(required = false) String authId,
+            @RequestParam(required = false) String source,
+            @RequestParam String code,
+            @RequestParam String redirectUrl,
+            @RequestParam String orgId,
+            ServerWebExchange exchange) {
+        return authenticationApiService.authenticateByOauth2(authId, source, code, redirectUrl, orgId)
+                .flatMap(authUser -> authenticationApiService.loginOrRegister(authUser, exchange, null, Boolean.TRUE))
                 .thenReturn(ResponseView.success(true));
     }
 
@@ -114,5 +136,4 @@ public class AuthenticationController implements AuthenticationEndpoints
                 .collectList()
                 .map(ResponseView::success);
     }
-
 }

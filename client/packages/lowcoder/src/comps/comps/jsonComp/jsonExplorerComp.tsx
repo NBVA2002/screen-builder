@@ -1,7 +1,7 @@
 import { Section, sectionNames } from "lowcoder-design";
 import { UICompBuilder, withDefault } from "../../generators";
 import { NameConfigHidden, NameConfig, withExposingConfigs } from "../../generators/withExposing";
-import ReactJson, { ThemeKeys } from "react-json-view";
+import ReactJson, { type ThemeKeys } from "react-json-view";
 import { defaultData } from "./jsonConstants";
 import styled from "styled-components";
 import { BoolControl } from "comps/controls/boolControl";
@@ -11,6 +11,7 @@ import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { trans } from "i18n";
 import { EditorContext } from "comps/editorState";
 import { useContext } from "react";
+import { AnimationStyle, AnimationStyleType, styleControl } from "@lowcoder-ee/index.sdk";
 
 /**
  * JsonExplorer Comp
@@ -34,7 +35,11 @@ const bgColorMap = {
   flat: "#2c3e50",
 };
 
-const JsonExplorerContainer = styled.div<{ $theme: keyof typeof bgColorMap }>`
+const JsonExplorerContainer = styled.div<{
+  $theme: keyof typeof bgColorMap;
+  $animationStyle: AnimationStyleType;
+}>`
+  ${(props) => props.$animationStyle}
   height: 100%;
   overflow-y: scroll;
   background-color: ${(props) => bgColorMap[props.$theme] || "#ffffff"};
@@ -48,10 +53,14 @@ let JsonExplorerTmpComp = (function () {
     value: withDefault(ArrayOrJSONObjectControl, JSON.stringify(defaultData, null, 2)),
     indent: withDefault(NumberControl, 4),
     expandToggle: BoolControl.DEFAULT_TRUE,
-    theme: dropdownControl(themeOptions, "shapeshifter:inverted"),
+    theme: dropdownControl(themeOptions, 'shapeshifter:inverted'),
+    animationStyle:styleControl(AnimationStyle),
   };
   return new UICompBuilder(childrenMap, (props) => (
-    <JsonExplorerContainer $theme={props.theme as keyof typeof bgColorMap}>
+    <JsonExplorerContainer
+      $theme={props.theme as keyof typeof bgColorMap}
+      $animationStyle={props.animationStyle}
+    >
       <ReactJson
         name={false}
         src={props.value}
@@ -82,12 +91,18 @@ let JsonExplorerTmpComp = (function () {
             </Section>
           )}
 
-          {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
-            <Section name={sectionNames.style}>
-              {children.theme.propertyView({
-                label: trans("jsonExplorer.theme"),
-              })}
-            </Section>
+          {(useContext(EditorContext).editorModeStatus === 'layout' ||
+            useContext(EditorContext).editorModeStatus === 'both') && (
+            <>
+              <Section name={sectionNames.style}>
+                {children.theme.propertyView({
+                  label: trans('jsonExplorer.theme'),
+                })}
+              </Section>
+              <Section name={sectionNames.animationStyle} hasTooltip={true}>
+                {children.animationStyle.getPropertyView()}
+              </Section>
+            </>
           )}
         </>
       );

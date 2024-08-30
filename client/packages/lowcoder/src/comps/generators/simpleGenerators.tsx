@@ -10,7 +10,7 @@ import {
   ConstructorToDataType,
   SimpleComp,
 } from "lowcoder-core";
-import { ControlPropertyViewWrapper } from "lowcoder-design";
+import {ControlPropertyViewWrapper, WhiteLoading} from "lowcoder-design";
 import { ReactNode } from "react";
 import { JSONValue } from "util/jsonTypes";
 
@@ -110,7 +110,8 @@ export function withViewFn<T extends new (...args: any) => Comp<ReactNode>>(
   viewFn: (comp: InstanceType<T>) => ReactNode
 ) {
   function View(props: { comp: InstanceType<T> }) {
-    return <>{viewFn(props.comp)}</>;
+    // @ts-ignore
+    return <>{props.comp.children.isLoading?.getView() ? <WhiteLoading /> : viewFn(props.comp)}</>;
   }
   const WithViewFnComp = class extends VariantComp {
     override getView() {

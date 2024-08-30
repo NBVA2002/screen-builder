@@ -16,15 +16,17 @@ import { BoolCodeControl } from "comps/controls/codeControl";
 import { DisabledContext } from "comps/generators/uiCompBuilder";
 import React, { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { AnimationStyle, styleControl } from "@lowcoder-ee/index.sdk";
 
 export const ContainerBaseComp = (function () {
   const childrenMap = {
     disabled: BoolCodeControl,
+    animationStyle: styleControl(AnimationStyle),
   };
   return new ContainerCompBuilder(childrenMap, (props, dispatch) => {
     return (
       <DisabledContext.Provider value={props.disabled}>
-        <TriContainer {...props} />
+          <TriContainer {...props} />        
       </DisabledContext.Provider>
     );
   })
@@ -41,7 +43,26 @@ export const ContainerBaseComp = (function () {
           {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
             <><Section name={sectionNames.layout}>
               {children.container.getPropertyView()}
-            </Section><Section name={sectionNames.style}>{children.container.stylePropertyView()}</Section></>
+            </Section>
+            <Section name={sectionNames.style}>
+              { children.container.stylePropertyView() }
+            </Section>
+            {children.container.children.showHeader.getView() && (
+              <Section name={"Header Style"}>
+                { children.container.headerStylePropertyView() }
+              </Section>
+            )}
+            {children.container.children.showBody.getView() && (
+              <Section name={"Body Style"}>
+                { children.container.bodyStylePropertyView() }
+              </Section>
+            )}
+            {children.container.children.showFooter.getView() && (
+              <Section name={"Footer Style"}>
+                { children.container.footerStylePropertyView() }
+              </Section>
+            )}
+            </>
           )}
         </>
       );
@@ -59,15 +80,17 @@ function convertOldContainerParams(params: CompParams<any>) {
     // old params
     if (container && (container.hasOwnProperty("layout") || container.hasOwnProperty("items"))) {
       const autoHeight = tempParams.value.autoHeight;
+      const scrollbars = tempParams.value.scrollbars;
       return {
         ...tempParams,
         value: {
           container: {
-            showHeader: false,
+            showHeader: true,
             body: { 0: { view: container } },
             showBody: true,
             showFooter: false,
             autoHeight: autoHeight,
+            scrollbars: scrollbars,
           },
         },
       };

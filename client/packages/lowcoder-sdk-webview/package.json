@@ -1,0 +1,46 @@
+{
+  "name": "@vietdanh1899/lowcoder-sdk",
+  "version": "2.4.26",
+  "type": "module",
+  "files": [
+    "src",
+    "dist",
+    "tsconfig.json"
+  ],
+  "main": "./dist/lowcoder-sdk.js",
+  "module": "./dist/lowcoder-sdk.js",
+  "exports": {
+    ".": {
+      "import": "./dist/lowcoder-sdk.js",
+      "require": "./dist/lowcoder-sdk.js"
+    },
+    "./dist/style.css": {
+      "import": "./dist/style.css"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:lib": "vite build -c vite-lib.config.js",
+    "lint": "eslint ../../../../../../AppData/Local/Temp/Rar$DRa31808.9162 --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "js-base64": "^3.7.7",
+    "lowcoder-sdk": "*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^7.5.0",
+    "@typescript-eslint/parser": "^7.5.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.6",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.8"
+  }
+}

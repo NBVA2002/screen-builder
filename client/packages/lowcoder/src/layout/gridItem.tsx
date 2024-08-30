@@ -34,6 +34,7 @@ type GridItemCallback<Data extends GridDragEvent | GridResizeEvent> = (
   arg3: Data
 ) => void;
 export type GridItemProps = {
+  zIndex: number;
   children: ReactElement;
   cols: number;
   containerWidth: number;
@@ -81,10 +82,18 @@ export type GridItemProps = {
 
 export const IsDroppable = React.createContext(true);
 
-const ResizableStyled = styled(Resizable)`
-  &:hover {
-    z-index: 1;
-  }
+/* const ResizableStyled = styled(Resizable)<{ $zIndex: number, isDroppable : boolean}>`
+  z-index: ${props => props.$zIndex * 10};
+  ${props => props.isDroppable && `
+    &:hover {
+      z-index: 1;
+    }
+  `}
+`; */
+
+// changed to remove &:hover { z-index: 1; as it lead into flickering
+const ResizableStyled = styled(Resizable)<{ $zIndex: number, isDroppable : boolean}>`
+  z-index: ${props => props.$zIndex * 10};
 `;
 
 /**
@@ -122,8 +131,10 @@ export function GridItem(props: GridItemProps) {
 
   const mixinDraggable = (child: ReactElement, isDraggable: boolean): ReactElement => {
     const { i } = props as Required<GridItemProps>;
+    const testSelectorClass = `lowcoder-${props.compType}`;
     return (
       <div
+        className={testSelectorClass}
         ref={elementRef}
         draggable={isDraggable}
         onDragStart={isDraggable ? onDragStart : undefined}
@@ -151,7 +162,8 @@ export function GridItem(props: GridItemProps) {
   const mixinResizable = (
     child: ReactElement,
     position: Position,
-    isResizable: boolean
+    isResizable: boolean,
+    zIndex: number,
   ): ReactElement => {
     const { cols, x, minW, minH, maxW, maxH, resizeHandles } = props;
     // This is the max possible width - doesn't go to infinity because of the width of the window
@@ -179,6 +191,8 @@ export function GridItem(props: GridItemProps) {
         onResizeStop={onResizeStop}
         resizeHandles={resizeHandles}
         handle={Handle}
+        $zIndex={zIndex}
+        isDroppable={draggingUtils.getData("i") !== props.i}
       >
         {child}
       </ResizableStyled>
@@ -397,7 +411,7 @@ export function GridItem(props: GridItemProps) {
     return { width, height, top, left };
   }, [dragging, position.height, position.left, position.top, position.width, resizing]);
 
-  const { isDraggable, isResizable, layoutHide, children, isSelected, clickItem } = props;
+  const { isDraggable, isResizable, layoutHide, children, isSelected, clickItem, zIndex } = props;
   const pos = calcPosition();
   const render = () => {
     let child = React.Children.only(children);
@@ -427,13 +441,19 @@ export function GridItem(props: GridItemProps) {
         cssTransforms: true,
       }),
       style: {
-        ...setTransform(pos),
+        ...setTransform(
+          pos,
+          props.name,
+          props.autoHeight,
+          props.hidden,
+          Boolean(draggingUtils.isDragging())
+        ),
         opacity: layoutHide ? 0 : undefined,
         pointerEvents: layoutHide ? "none" : "auto",
       },
     });
     // Resizable support. This is usually on but the user can toggle it off.
-    newChild = mixinResizable(newChild, pos, isResizable);
+    newChild = mixinResizable(newChild, pos, isResizable, zIndex);
     // Draggable support. This is always on, except for with placeholders.
     newChild = mixinDraggable(newChild, isDraggable);
     return newChild;

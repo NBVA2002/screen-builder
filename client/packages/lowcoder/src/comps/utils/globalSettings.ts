@@ -1,4 +1,5 @@
-import { CommonSettingResponseData } from "api/commonSettingApi";
+import type { CommonSettingResponseData } from "api/commonSettingApi";
+import React from "react";
 
 interface GlobalSettings {
   orgCommonSettings?: CommonSettingResponseData;
@@ -19,3 +20,5 @@ export function setGlobalSettings(patch: GlobalSettings) {
 export function getGlobalSettings() {
   return globalSettings;
 }
+
+export const OrgCommonSettingsContext = React.createContext<CommonSettingResponseData | undefined>({});

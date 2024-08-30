@@ -9,7 +9,7 @@ import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { trans } from "i18n";
 import { LabelControl } from "comps/controls/labelControl";
 import { formDataChildren, FormDataPropertyView } from "../formComp/formDataConstants";
-import { JsonEditorStyle } from "comps/controls/styleControlConstants";
+import { AnimationStyle, JsonEditorStyle } from "comps/controls/styleControlConstants";
 import { styleControl } from "comps/controls/styleControl";
 import { migrateOldData, withDefault } from "comps/generators/simpleGenerators";
 import { useRef, useEffect, useContext } from "react";
@@ -19,7 +19,6 @@ import {
   type EditorView as EditorViewType,
 } from "base/codeEditor/codeMirror";
 import { useExtensions } from "base/codeEditor/extensions";
-import { getJsonFormatter } from "base/codeEditor/autoFormat";
 import { EditorContext } from "comps/editorState";
 
 /**
@@ -67,6 +66,7 @@ const childrenMap = {
   onEvent: ChangeEventHandlerControl,
   label: withDefault(LabelControl, { position: "column" }),
   style: styleControl(JsonEditorStyle),
+  animationStyle: styleControl(AnimationStyle),
 
   ...formDataChildren,
 };
@@ -118,6 +118,7 @@ let JsonEditorTmpComp = (function () {
     }
     return props.label({
       style: props.style,
+      animationStyle: props.animationStyle,
       children: <Wrapper ref={wrapperRef} onFocus={() => (editContent.current = "focus")} />,
     });
   })
@@ -139,7 +140,10 @@ let JsonEditorTmpComp = (function () {
 
           {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && ( children.label.getPropertyView() )}
           {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+            <>
             <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
+              <Section name={sectionNames.animationStyle} hasTooltip={true}>{children.animationStyle.getPropertyView()}</Section>
+              </>
           )}
 
         </>

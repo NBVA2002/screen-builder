@@ -1,17 +1,30 @@
-import { ApplicationResp } from "api/applicationApi";
-import axios from "axios";
-import { RootComp } from "comps/comps/rootComp";
+import type { RootComp } from "comps/comps/rootComp";
 import { setGlobalSettings } from "comps/utils/globalSettings";
 import { sdkConfig } from "constants/sdkConfig";
-import _ from "lodash";
-import ReactDOM from "react-dom";
+import { get, set, isEqual, cloneDeep } from "lodash";
+import type { Root } from "react-dom/client";
 import { StyleSheetManager } from "styled-components";
-import { ModuleDSL, ModuleDSLIoInput } from "types/dsl";
-import { AppView } from "./AppView";
+import type { ModuleDSL, ModuleDSLIoInput } from "types/dsl";
 import { API_STATUS_CODES } from "constants/apiConstants";
 import { AUTH_LOGIN_URL } from "constants/routesURL";
 import { AuthSearchParams } from "constants/authConstants";
-import { saveAuthSearchParams } from "@lowcoder-ee/pages/userAuth/authUtils";
+import { saveAuthSearchParams } from "pages/userAuth/authUtils";
+import { Suspense, lazy } from "react";
+import Flex from "antd/es/flex";
+import { TacoButton } from "components/button";
+import { DatasourceApi } from "@lowcoder-ee/api/datasourceApi";
+import { registryDataSourcePlugin } from "@lowcoder-ee/constants/queryConstants";
+import Api from "@lowcoder-ee/api/api";
+import {db} from "@lowcoder-ee/appView/db";
+import {ApplicationDetail} from "@lowcoder-ee/constants/applicationConstants";
+import {WhiteLoading} from "components/Loading";
+import {CommonSettingResponseData} from "@lowcoder-ee/api/commonSettingApi";
+import {dequal} from "dequal";
+
+const AppView = lazy(
+  () => import('./AppView')
+    .then(module => ({default: module.AppView}))
+);
 
 export type OutputChangeHandler<O> = (output: O) => void;
 export type EventTriggerHandler = (eventName: string) => void;
@@ -28,22 +41,29 @@ export interface AppViewInstanceOptions<I = any> {
   baseUrl?: string;
   webUrl?: string;
   moduleInputs?: I;
+  orgId?: string;
 }
+
+let isAuthButtonClicked = false;
 
 export class AppViewInstance<I = any, O = any> {
   private comp: RootComp | null = null;
   private prevOutputs: any = null;
   private events = new Map<keyof EventHandlerMap, EventHandlerMap<O>[keyof EventHandlerMap]>();
-  private dataPromise: Promise<{ appDsl: any; moduleDslMap: any }>;
+  private dataPromise: Promise<{ appDsl: any; moduleDslMap: any, orgCommonSettings?: CommonSettingResponseData }>;
   private options: AppViewInstanceOptions = {
     baseUrl: "https://api-service.lowcoder.cloud",
     webUrl: "https://app.lowcoder.cloud",
   };
+  private authorizedUser: boolean = true;
 
-  constructor(private appId: string, private node: Element, options: AppViewInstanceOptions = {}) {
+  constructor(private appId: string, private node: Element, private root: Root, options: AppViewInstanceOptions = {}) {
     Object.assign(this.options, options);
     if (this.options.baseUrl) {
       sdkConfig.baseURL = this.options.baseUrl;
+    }
+    if (this.options.webUrl) {
+      sdkConfig.webUrl = this.options.webUrl;
     }
 
     this.dataPromise = this.loadData();
@@ -54,11 +74,12 @@ export class AppViewInstance<I = any, O = any> {
     return dsl?.ui?.compType === "module";
   }
 
-  private async loadData() {
+  private async loadData(dataReload?: ApplicationDetail) {
     const { baseUrl, appDsl, moduleDslMap, webUrl } = this.options;
 
     let finalAppDsl = appDsl;
     let finalModuleDslMap = moduleDslMap;
+    let orgCommonSettings;
 
     setGlobalSettings({
       isViewMode: true,
@@ -66,31 +87,60 @@ export class AppViewInstance<I = any, O = any> {
     });
 
     if (!appDsl) {
-      const http = axios.create({ baseURL: baseUrl, withCredentials: true });
-      const data: ApplicationResp = await http
-        .get(`/api/v1/applications/${this.appId}/view`)
-        .then((i) => i.data)
-        .catch((e) => {
-          if (e.response?.status === API_STATUS_CODES.REQUEST_NOT_AUTHORISED) {
-            saveAuthSearchParams({
-              [AuthSearchParams.redirectUrl]: encodeURIComponent(window.location.href),
-              [AuthSearchParams.loginType]: null,
-            })
-            window.location.href = `${webUrl}${AUTH_LOGIN_URL}`;
-          }
+      let data: ApplicationDetail = dataReload!;
+
+      if (!dataReload) {
+        const dataRes: Promise<ApplicationDetail> = Api
+          .get(`/applications/${this.appId}/view`)
+          .then((i) => i.data.data)
+          .catch((e) => {
+            if (e.response?.status === API_STATUS_CODES.REQUEST_NOT_AUTHORISED) {
+              saveAuthSearchParams({
+                [AuthSearchParams.redirectUrl]: encodeURIComponent(window.location.href),
+                [AuthSearchParams.loginType]: null,
+              })
+
+              this.authorizedUser = false;
+              return {
+                data: {
+                  orgCommonSettings: undefined, applicationDSL: {}, moduleDSL: {},
+                }
+              };
+            }
+          });
+
+        const cacheViewPromise = db.apps.get({"applicationInfoView.applicationId": this.appId});
+
+        Promise.all([dataRes, cacheViewPromise]).then(async ([newView, oldView]) => {
+          if (oldView && !dequal(newView, oldView)) {
+            await db.apps.put(newView);
+            this.dataPromise = this.loadData(newView);
+            await this.dataPromise;
+            await this.render();
+          } else if (!oldView) db.apps.put(newView);
         });
 
+        data = cloneDeep(await cacheViewPromise ?? await dataRes);
+
+        DatasourceApi.fetchJsDatasourceByApp(this.appId).then((res) => {
+          res.data.data.forEach((i) => {
+            registryDataSourcePlugin(i.type, i.id, i.pluginDefinition);
+          });
+        });
+      }
+
       setGlobalSettings({
-        orgCommonSettings: data.data.orgCommonSettings,
+        orgCommonSettings: data.orgCommonSettings,
       });
 
-      finalAppDsl = data.data.applicationDSL;
-      finalModuleDslMap = data.data.moduleDSL;
+      finalAppDsl = data.applicationDSL;
+      finalModuleDslMap = data.moduleDSL;
+      orgCommonSettings = data.orgCommonSettings;
     }
 
-    if (this.options.moduleInputs && this.isModuleDSL(finalAppDsl)) {
+    if (!dataReload && this.options.moduleInputs && this.isModuleDSL(finalAppDsl)) {
       const inputsPath = "ui.comp.io.inputs";
-      const nextInputs = _.get(finalAppDsl, inputsPath, []).map((i: ModuleDSLIoInput) => {
+      const nextInputs = get(finalAppDsl, inputsPath, []).map((i: ModuleDSLIoInput) => {
         const inputValue = this.options.moduleInputs[i.name];
         if (inputValue) {
           return {
@@ -103,12 +153,13 @@ export class AppViewInstance<I = any, O = any> {
         }
         return i;
       });
-      _.set(finalAppDsl, inputsPath, nextInputs);
+      set(finalAppDsl, inputsPath, nextInputs);
     }
 
     return {
       appDsl: finalAppDsl,
       moduleDslMap: finalModuleDslMap,
+      orgCommonSettings: orgCommonSettings
     };
   }
 
@@ -128,7 +179,7 @@ export class AppViewInstance<I = any, O = any> {
           return [name, value];
         })
       );
-      if (!_.isEqual(this.prevOutputs, outputValue)) {
+      if (!isEqual(this.prevOutputs, outputValue)) {
         this.prevOutputs = outputValue;
         this.emit("moduleOutputChange", [outputValue]);
       }
@@ -136,19 +187,58 @@ export class AppViewInstance<I = any, O = any> {
   }
 
   private async render() {
+    const statusOrValue = await Promise.race([this.dataPromise, 'pending']);
+    if (statusOrValue === 'pending') {
+      // Not yet finished
+      this.root.render(<WhiteLoading/>);
+    }
+
     const data = await this.dataPromise;
-    ReactDOM.render(
-      <StyleSheetManager target={this.node as HTMLElement}>
-        <AppView
-          appId={this.appId}
-          dsl={data.appDsl}
-          moduleDsl={data.moduleDslMap}
-          moduleInputs={this.options.moduleInputs}
-          onCompChange={(comp) => this.handleCompChange(comp)}
-          onModuleEventTriggered={(eventName) => this.emit("moduleEventTriggered", [eventName])}
-        />
-      </StyleSheetManager>,
-      this.node
+    const loginUrl = this.options.orgId
+      ? `${this.options.webUrl}/org/${this.options.orgId}/auth/login`
+      : `${this.options.webUrl}${AUTH_LOGIN_URL}`;
+
+    this.root.render(
+      this.authorizedUser ? (
+        <StyleSheetManager target={this.node as HTMLElement}>
+          <Suspense fallback={<WhiteLoading/>}>
+            <AppView
+              orgCommonSettings={data.orgCommonSettings}
+              appId={this.appId}
+              dsl={data.appDsl}
+              moduleDsl={data.moduleDslMap}
+              moduleInputs={this.options.moduleInputs}
+              onCompChange={(comp) => this.handleCompChange(comp)}
+              onModuleEventTriggered={(eventName) => this.emit("moduleEventTriggered", [eventName])}
+            />
+          </Suspense>
+        </StyleSheetManager>
+      ) : (
+        <Flex vertical={true} align="center" justify="center">
+          <h4>This resource needs authentication.</h4>
+          {!isAuthButtonClicked ? (
+            <TacoButton
+              buttonType="primary"
+              onClick={() => {
+                isAuthButtonClicked = true;
+                window.open(loginUrl, '_blank');
+                this.render();
+              }}
+            >
+              Login
+            </TacoButton>
+          ) : (
+            <TacoButton
+              buttonType="primary"
+              onClick={() => {
+                window.location.reload();
+              }}
+            >
+              Refresh
+            </TacoButton>
+          )}
+        </Flex>
+      )
     );
   }
 

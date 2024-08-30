@@ -1,13 +1,14 @@
-import { CodeEditor } from "base/codeEditor";
 import { EmptyContent } from "components/EmptyContent";
 import { HelpText } from "components/HelpText";
 import { GreyTextColor } from "constants/style";
 import { CustomModal, CustomSelect, TacoButton } from "lowcoder-design";
-import React, { useEffect, useState } from "react";
+import React, { lazy, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCommonSettings, setCommonSettings } from "redux/reduxActions/commonSettingsActions";
 import { getCommonSettings } from "redux/selectors/commonSettingSelectors";
+import { fetchAPIUsageAction, fetchLastMonthAPIUsageAction } from "redux/reduxActions/orgActions";
 import { getUser } from "redux/selectors/usersSelectors";
+import { getOrgApiUsage, getOrgLastMonthApiUsage } from "redux/selectors/orgSelectors";
 import styled from "styled-components";
 import { useShallowEqualSelector } from "util/hooks";
 import { Level1SettingPageContent, Level1SettingPageTitle } from "../styled";
@@ -23,7 +24,12 @@ import { JSLibraryTree } from "components/JSLibraryTree";
 import { getGlobalSettings } from "comps/utils/globalSettings";
 import { fetchJSLibrary } from "util/jsLibraryUtils";
 import { evalFunc } from "lowcoder-core";
-import { messageInstance } from "lowcoder-design";
+import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
+
+const CodeEditor = lazy(
+  () => import("base/codeEditor/codeEditor")
+    .then(module => ({default: module.CodeEditor}))
+)
 
 const AdvancedSettingContent = styled.div`
   max-width: 840px;
@@ -76,6 +82,16 @@ export function AdvancedSetting() {
     label: app.name,
   }));
 
+  const apiUsage = useSelector(getOrgApiUsage);
+  useEffect(() => {
+    dispatch(fetchAPIUsageAction(currentUser.currentOrgId));
+  }, [currentUser.currentOrgId])
+
+  const lastMonthApiUsage = useSelector(getOrgLastMonthApiUsage);
+  useEffect(() => {
+    dispatch(fetchLastMonthAPIUsageAction(currentUser.currentOrgId));
+  }, [currentUser.currentOrgId])
+
   useEffect(() => {
     dispatch(fetchCommonSettings({ orgId: currentUser.currentOrgId }));
     dispatch(fetchAllApplications({}));
@@ -118,8 +134,8 @@ export function AdvancedSetting() {
 
   const isNotChange = JSON.stringify(commonSettings) === JSON.stringify(settings);
   const extraAdvanceSettings = useExtraAdvanceSettings();
-
   const runJSInHost = getGlobalSettings().orgCommonSettings?.runJavaScriptInHost ?? false;
+
   return (
     <Level1SettingPageContent>
       <Prompt
@@ -262,6 +278,12 @@ export function AdvancedSetting() {
           )}
         </div>
         {extraAdvanceSettings}
+        <div className="section-title">{trans("advanced.APIConsumption")}</div>
+        <HelpText style={{ marginBottom: 12 }}>{trans("advanced.APIConsumptionDescription")}</HelpText>
+        <div className="section-content">
+          {trans("advanced.overallAPIConsumption")} : {apiUsage ? Intl.NumberFormat('en-GB', { maximumFractionDigits: 2 }).format(apiUsage) + " API Calls.": 'Loading API usage data...'}<br/>
+          {trans("advanced.lastMonthAPIConsumption")} : {lastMonthApiUsage ? Intl.NumberFormat('en-GB', { maximumFractionDigits: 2 }).format(lastMonthApiUsage) + " API Calls." : 'Loading API usage data...'}
+        </div>
       </AdvancedSettingContent>
     </Level1SettingPageContent>
   );

@@ -2,7 +2,7 @@ package org.lowcoder.api.usermanagement;
 
 import java.util.List;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 import org.lowcoder.api.authentication.dto.OrganizationDomainCheckResult;
 import org.lowcoder.api.framework.view.ResponseView;
@@ -123,6 +123,12 @@ public class OrganizationController implements OrganizationEndpoints
     @Override
     public Mono<ResponseView<Boolean>> updateOrgCommonSettings(@PathVariable String orgId, @RequestBody UpdateOrgCommonSettingsRequest request) {
         return orgApiService.updateOrgCommonSettings(orgId, request.key(), request.value())
+                .map(ResponseView::success);
+    }
+
+    @Override
+    public Mono<ResponseView<Long>> getOrgApiUsageCount(String orgId, Boolean lastMonthOnly) {
+        return orgApiService.getApiUsageCount(orgId, lastMonthOnly)
                 .map(ResponseView::success);
     }
 

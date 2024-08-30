@@ -1,7 +1,9 @@
-import { Dropdown, Menu } from "antd";
+import { default as Menu } from "antd/es/menu";
+import { default as Dropdown } from "antd/es/dropdown";
+import { default as DropdownButton } from "antd/es/dropdown/dropdown-button";
 import { BoolControl } from "comps/controls/boolControl";
 import { BoolCodeControl, StringControl } from "comps/controls/codeControl";
-import { ButtonStyleType } from "comps/controls/styleControlConstants";
+import { DropdownStyle, DropdownStyleType } from "comps/controls/styleControlConstants";
 import { withDefault } from "comps/generators";
 import { UICompBuilder } from "comps/generators/uiCompBuilder";
 import { disabledPropertyView, hiddenPropertyView } from "comps/utils/propertyUtils";
@@ -19,19 +21,27 @@ import {
   ButtonStyleControl,
   getButtonStyle,
 } from "./buttonCompConstants";
+import { styleControl } from "@lowcoder-ee/index.sdk";
 
 
-const DropdownButton = styled(Dropdown.Button)`
+const StyledDropdownButton = styled(DropdownButton)`
   width: 100%;
+  
   .ant-btn-group {
     width: 100%;
+   
   }
 `;
 
-const LeftButtonWrapper = styled.div<{ $buttonStyle: ButtonStyleType }>`
+const LeftButtonWrapper = styled.div<{ $buttonStyle: DropdownStyleType }>`
   width: calc(100%);
   ${(props) => `margin: ${props.$buttonStyle.margin};`}
   margin-right: 0;
+  .ant-btn span {
+    ${(props) => `text-decoration: ${props.$buttonStyle.textDecoration};`}
+    ${(props) => `font-family: ${props.$buttonStyle.fontFamily};`}
+  }
+  
   .ant-btn {
     ${(props) => getButtonStyle(props.$buttonStyle)}
     margin: 0 !important;
@@ -39,12 +49,21 @@ const LeftButtonWrapper = styled.div<{ $buttonStyle: ButtonStyleType }>`
     &.ant-btn-default {
       margin: 0 !important;
       ${(props) => `border-radius: ${props.$buttonStyle.radius} 0 0 ${props.$buttonStyle.radius};`}
+      ${(props) => `text-transform: ${props.$buttonStyle.textTransform};`}
+      ${(props) => `font-weight: ${props.$buttonStyle.textWeight};`}
     }
+    ${(props) => `background-color: ${props.$buttonStyle.background};`}
+    ${(props) => `color: ${props.$buttonStyle.text};`}
+    ${(props) => `padding: ${props.$buttonStyle.padding};`}
+    ${(props) => `font-size: ${props.$buttonStyle.textSize};`}
+    ${(props) => `font-style: ${props.$buttonStyle.fontStyle};`}
+
     width: 100%;
   }
+  
 `;
 
-const RightButtonWrapper = styled.div<{ $buttonStyle: ButtonStyleType }>`
+const RightButtonWrapper = styled.div<{ $buttonStyle: DropdownStyleType }>`
   // width: 32px;
   ${(props) => `margin: ${props.$buttonStyle.margin};`}
   margin-left: -1px;
@@ -67,7 +86,7 @@ const DropdownTmpComp = (function () {
     options: DropdownOptionControl,
     disabled: BoolCodeControl,
     onEvent: ButtonEventHandlerControl,
-    style: ButtonStyleControl,
+    style: styleControl(DropdownStyle),
   };
   return new UICompBuilder(childrenMap, (props) => {
     const hasIcon =
@@ -81,13 +100,16 @@ const DropdownTmpComp = (function () {
         key: option.label + " - " + index,
         disabled: option.disabled,
         icon: hasIcon && <span>{option.prefixIcon}</span>,
-        onEvent: option.onEvent,
+        index,
       }));
 
     const menu = (
       <Menu
         items={items}
-        onClick={({ key }) => items.find((o) => o.key === key)?.onEvent("click")}
+        onClick={({ key }) => {
+          const item = items.find((o) => o.key === key);
+          item && props.options[item.index]?.onEvent("click");
+        }}
       />
     );
 
@@ -103,7 +125,7 @@ const DropdownTmpComp = (function () {
             </Button100>
           </Dropdown>
         ) : (
-          <DropdownButton
+          <StyledDropdownButton
             disabled={props.disabled}
             dropdownRender={() => menu}
             onClick={() => props.onEvent("click")}
@@ -122,7 +144,7 @@ const DropdownTmpComp = (function () {
           >
             {/* Avoid button disappearing */}
             {!props.text || props.text?.length === 0 ? " " : props.text}
-          </DropdownButton>
+          </StyledDropdownButton>
         )}
       </ButtonCompWrapper>
     );

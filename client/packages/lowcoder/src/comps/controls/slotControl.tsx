@@ -1,4 +1,4 @@
-import { Modal } from "antd";
+import { default as Modal } from "antd/es/modal";
 import { SimpleContainerComp } from "comps/comps/containerBase/simpleContainerComp";
 import {
   ContainerBaseProps,
@@ -10,7 +10,7 @@ import { BackgroundColorContext } from "comps/utils/backgroundColorContext";
 import { CanvasContainerID } from "constants/domLocators";
 import { Layers } from "constants/Layers";
 import { trans } from "i18n";
-import { changeChildAction, ConstructorToView } from "lowcoder-core";
+import { changeChildAction, CompActionTypes, ConstructorToView } from "lowcoder-core";
 import { HintPlaceHolder, TacoButton } from "lowcoder-design";
 import { createContext, useContext } from "react";
 import styled from "styled-components";
@@ -65,7 +65,7 @@ function ModalConfigView(props: {
         onCancel={onCancel}
         getContainer={() => document.querySelector(`#${CanvasContainerID}`) || document.body}
         footer={null}
-        bodyStyle={{ padding: "0" }}
+        styles={{ body: {padding: "0"} }}
         zIndex={Layers.modal}
         modalRender={(node) => (
           <ModalStyled $background={background} onClick={() => {}}>

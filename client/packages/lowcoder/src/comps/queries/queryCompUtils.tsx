@@ -14,6 +14,13 @@ export type FunctionProperty = {
 };
 
 /**
+ * Extract the evaluated key-value pairs from the list params control
+ */
+export const transformList = (a: any) => _.transform(a, function (result: any, value, key) {
+  if (value.key?.text?.value) result[value.key.text.value] = value.value.text.value;
+}, {});
+
+/**
  * public method for query request
  */
 export function toQueryView(params: FunctionProperty[]) {

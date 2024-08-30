@@ -1,6 +1,6 @@
 import { trans } from "i18n";
-import { green, red, yellow } from "@ant-design/colors";
-import { FormItemProps } from "antd";
+import { green, red, yellow } from "@ant-design/colors/es";
+import { FormItemProps } from "antd/es/form/FormItem";
 import { BoolControl } from "comps/controls/boolControl";
 import { NumberControl, StringControl } from "comps/controls/codeControl";
 import { dropdownControl } from "comps/controls/dropdownControl";
@@ -9,17 +9,22 @@ import { MultiCompBuilder } from "comps/generators/multi";
 import { labelCss, Section, Tooltip, UnderlineCss } from "lowcoder-design";
 import { ValueFromOption } from "lowcoder-design";
 import { isEmpty } from "lodash";
-import { ReactNode } from "react";
+import { Fragment, ReactNode } from "react";
 import styled, { css } from "styled-components";
 import { AlignLeft } from "lowcoder-design";
 import { AlignRight } from "lowcoder-design";
 import { StarIcon } from "lowcoder-design";
 
-import { heightCalculator, widthCalculator } from "./styleControlConstants";
+import { AnimationStyleType, LabelStyleType, heightCalculator, widthCalculator } from "./styleControlConstants";
 
 type LabelViewProps = Pick<FormItemProps, "required" | "help" | "validateStatus"> & {
   children: ReactNode;
   style?: Record<string, string>;
+  labelStyle?: Record<string, string>;
+  field?: Record<string, string>;
+  inputFieldStyle?: Record<string, string>;
+  childrenInputFieldStyle?: Record<string, string>;
+  animationStyle?: Record<string, string>;
 };
 
 const StyledStarIcon = styled(StarIcon)`
@@ -40,45 +45,70 @@ function getStyle(style: any) {
   `;
 }
 
-const LabelViewWrapper = styled.div<{ $style: any }>`
-  ${(props) => props.$style && getStyle(props.$style)}
+const LabelViewWrapper = styled.div<{ $style: any, inputFieldStyle: any,$animationStyle:any }>`
+  ${(props) => {
+    return (
+      props.$style && {
+        ...props.$style,
+        width: widthCalculator(props.$style ? props.$style?.margin : "0px"),
+        height: heightCalculator(props.$style ? props.$style?.margin : "0px"),
+        borderRadius: props.$style.radius,
+        rotate: props.$style.rotation,
+        boxShadow: `${props.$style.boxShadow} ${props.$style.boxShadowColor}`,
+      }
+    );
+  }}
+  ${(props) => props.inputFieldStyle && getStyle(props.inputFieldStyle)}
+  ${(props) => props.$animationStyle && props.$animationStyle}
   display: flex;
   flex-direction: column;
-  height: 100%;
+  border: ${(props)=>{return props.$style.borderWidth}} ${(props)=>{return props.$style.borderStyle}} ${(props)=>{return props.$style.border}} !important;
 `;
 
 const MainWrapper = styled.div<{
-  position: PositionOptionsValue;
-  hasLabel: boolean;
+  $position: PositionOptionsValue;
+  $hasLabel: boolean;
 }>`
-  flex-direction: ${(props) => props.position};
+  flex-direction: ${(props) => props.$position};
   flex-grow: 1;
   width: 100%;
-  margin-top: ${(props) => (props.position === "column" && props.hasLabel ? "4px" : 0)};
+  margin-top: ${(props) => (props.$position === "column" && props.$hasLabel ? "4px" : 0)};
   height: ${(props) =>
-    props.position === "column" && props.hasLabel ? "calc(100% - 4px)" : "100%"};
+    props.$position === "column" && props.$hasLabel ? "calc(100% - 4px)" : "100%"};
   display: flex;
-  align-items: ${(props) => (props.position === "row" ? "center" : "start")};
+  align-items: ${(props) => (props.$position === "row" ? "center" : "start")};
   flex-shrink: 0;
 `;
 
 const LabelWrapper = styled.div<{
-  align: AlignOptionsValue;
-  position: PositionOptionsValue;
-  hasToolTip: boolean;
+  $align: AlignOptionsValue;
+  $position: PositionOptionsValue;
+  $hasToolTip: boolean;
 }>`
   display: flex;
   align-items: center;
   margin-right: 8px;
-  margin-bottom: ${(props) => (props.position === "row" ? 0 : "3.5px")};
-  justify-content: ${(props) => (props.align === "left" ? "start" : "end")};
-  max-width: ${(props) => (props.position === "row" ? "80%" : "100%")};
+  margin-bottom: ${(props) => (props.$position === "row" ? 0 : "3.5px")};
+  justify-content: ${(props) => (props.$align === "left" ? "start" : "end")};
+  max-width: ${(props) => (props.$position === "row" ? "80%" : "100%")};
   flex-shrink: 0;
 `;
+// ${(props) => props.$border && UnderlineCss};
+// ${(props) => props.$border && `border-bottom:${props.$labelStyle.borderWidth} ${props.$labelStyle.borderStyle} ${!!props.$validateStatus && props?.$validateStatus === 'error' ? props.$labelStyle.validate : props.$labelStyle.border};`}
 
-const Label = styled.span<{ border: boolean }>`
+const Label = styled.span<{ $border: boolean, $labelStyle: LabelStyleType, $validateStatus: "success" | "warning" | "error" | "validating" | null }>`
   ${labelCss};
-  ${(props) => props.border && UnderlineCss};
+  font-family:${(props) => props.$labelStyle.fontFamily};
+  font-weight:${(props) => props.$labelStyle.textWeight};
+  font-style:${(props) => props.$labelStyle.fontStyle};
+  text-transform:${(props) => props.$labelStyle.textTransform};
+  text-decoration:${(props) => props.$labelStyle.textDecoration};
+  font-size:${(props) => props.$labelStyle.textSize};
+  color:${(props) => !!props.$validateStatus && props?.$validateStatus === 'error' ? props.$labelStyle.validate : props.$labelStyle.label} !important;
+  ${(props) => `border:${props.$labelStyle.borderWidth} ${props.$labelStyle.borderStyle} ${!!props.$validateStatus && props?.$validateStatus === 'error' ? props.$labelStyle.validate : props.$labelStyle.border};`}
+  border-radius:${(props) => props.$labelStyle.radius};
+  padding:${(props) => props.$labelStyle.padding};
+  margin:${(props) => props.$labelStyle.margin};
   width: fit-content;
   user-select: text;
   white-space: nowrap;
@@ -93,13 +123,13 @@ const ChildrenWrapper = styled.div`
 `;
 
 const HelpWrapper = styled.div<{
-  marginLeft: string;
-  color?: string;
+  $marginLeft: string;
+  $color?: string;
 }>`
   ${labelCss};
   margin-top: 4px;
-  margin-left: ${(props) => props.marginLeft};
-  color: ${(props) => props.color};
+  margin-left: ${(props) => props.$marginLeft};
+  color: ${(props) => props.$color};
   display: block;
   font-size: 13px;
 `;
@@ -144,32 +174,36 @@ export const LabelControl = (function () {
     position: dropdownControl(PositionOptions, "row"),
     align: dropdownControl(AlignOptions, "left"),
   };
-  return new MultiCompBuilder(childrenMap, (props) => (args: LabelViewProps) => (
-    <LabelViewWrapper $style={args.style}>
-      <MainWrapper	
-        position={props.position}	
-        hasLabel={!!props.text}	
-        style={{	
-          margin: args && args.style ? args?.style?.margin : 0,	
-          // padding: args && args.style ? args?.style?.padding : 0,	
-          width: widthCalculator(	
-            args && args.style ? args?.style?.margin : "0px"	
-          ),	
-          height: heightCalculator(	
-            args && args.style ? args?.style?.margin : "0px"	
-          ),	
-        }}	
+
+  return new MultiCompBuilder(childrenMap, (props) => (args: LabelViewProps) => 
+  {
+    return <LabelViewWrapper $style={args.style} inputFieldStyle={args.inputFieldStyle} $animationStyle={args.animationStyle}>
+      <MainWrapper
+        $position={props.position}
+        $hasLabel={!!props.text}
+        style={{
+          margin: args && args.inputFieldStyle ? args?.inputFieldStyle?.margin : 0,
+          // padding: args && args.inputFieldStyle ? args?.inputFieldStyle?.padding : 0,	
+          width: widthCalculator(
+            args && args.inputFieldStyle ? args?.inputFieldStyle?.margin : "0px"
+          ),
+          height: heightCalculator(
+            args && args.inputFieldStyle ? args?.inputFieldStyle?.margin : "0px"
+          ),
+        }}
       >
         {!props.hidden && !isEmpty(props.text) && (
           <LabelWrapper
-            align={props.align}
+            $align={props.align}
             style={{
               width:
                 props.position === "row" ? getLabelWidth(props.width, props.widthUnit) : "100%",
               maxWidth: props.position === "row" ? "70%" : "100%",
+              fontSize: args && args.style ? args?.style?.textSize : "14px",
+              rotate:args?.labelStyle?.rotation
             }}
-            position={props.position}
-            hasToolTip={!!props.tooltip}
+            $position={props.position}
+            $hasToolTip={!!props.tooltip}
           >
             <Tooltip
               title={props.tooltip && <TooltipWrapper>{props.tooltip}</TooltipWrapper>}
@@ -178,10 +212,14 @@ export const LabelControl = (function () {
               }}
               placement="top"
               color="#2c2c2c"
-              popupVisible={!!props.tooltip}
               getPopupContainer={(node: any) => node.closest(".react-grid-item")}
             >
-              <Label border={!!props.tooltip}>{props.text}</Label>
+              <Label
+                $border={!!props.tooltip}
+                $validateStatus={args && args.validateStatus ? args.validateStatus : null}
+                $labelStyle={{ ...args.labelStyle }}>
+                {props.text}
+              </Label>
             </Tooltip>
             {args.required && <StyledStarIcon />}
           </LabelWrapper>
@@ -193,6 +231,7 @@ export const LabelControl = (function () {
                 ? `calc(100% - ${getLabelWidth(props.width, props.widthUnit)} - 8px)`
                 : "100%",
             height: props.position === "column" && !!props.text ? "calc(100% - 22px)" : "100%",
+            rotate:args?.inputFieldStyle?.rotation,
           }}
         >
           {args.children}
@@ -201,24 +240,24 @@ export const LabelControl = (function () {
 
       {args.help && (
         <HelpWrapper
-          marginLeft={
+          $marginLeft={
             props.position === "column" || isEmpty(props.text) || props.hidden
               ? "0"
               : `calc(min(${getLabelWidth(props.width, props.widthUnit)} , 70%) + 8px)`
           }
-          color={
+          $color={
             args.validateStatus === "error"
               ? red.primary
               : args.validateStatus === "warning"
-              ? yellow.primary
-              : green.primary
+                ? yellow.primary
+                : green.primary
           }
         >
           {args.help}
         </HelpWrapper>
       )}
-    </LabelViewWrapper>
-  ))
+    </LabelViewWrapper>}
+)
     .setPropertyViewFn((children) => (
       <Section name={trans("label")}>
         {children.text.propertyView({ label: trans("labelProp.text") })}

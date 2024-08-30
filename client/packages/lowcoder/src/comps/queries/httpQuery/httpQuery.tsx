@@ -3,16 +3,19 @@ import { QueryConfigItemWrapper, QueryConfigLabel, QueryConfigWrapper } from "co
 import { valueComp, withDefault } from "comps/generators";
 import { trans } from "i18n";
 import { includes } from "lodash";
-import { CompAction, MultiBaseComp } from "lowcoder-core";
+import {AbstractNode, CompAction, MultiBaseComp} from "lowcoder-core";
 import { keyValueListControl } from "../../controls/keyValueControl";
-import { ParamsJsonControl, ParamsStringControl } from "../../controls/paramsControl";
+import {ParamsBooleanControl, ParamsJsonControl, ParamsStringControl} from "../../controls/paramsControl";
 import { withTypeAndChildrenAbstract } from "../../generators/withType";
-import { toQueryView } from "../queryCompUtils";
+import {toQueryView, transformList} from "../queryCompUtils";
 import {
   HttpHeaderPropertyView,
   HttpParametersPropertyView,
-  HttpPathPropertyView,
+  HttpPathPropertyView, HttpProxyPropertyView,
 } from "./httpQueryConstants";
+import axios, {AxiosResponse} from "axios";
+import {QUERY_EXECUTION_ERROR, QUERY_EXECUTION_OK} from "@lowcoder-ee/constants/queryConstants";
+import { JSONValue } from "util/jsonTypes";
 
 const BodyTypeOptions = [
   { label: "JSON", value: "application/json" },
@@ -55,6 +58,7 @@ const CommandMap = {
 };
 
 const childrenMap = {
+  proxy: withDefault(ParamsBooleanControl, false),
   httpMethod: valueComp<HttpMethodValue>("GET"),
   path: ParamsStringControl,
   // cookies: withDefault(keyValueListControl(), [{ key: "", value: "" }]),
@@ -93,7 +97,31 @@ export class HttpQuery extends HttpTmpQuery {
       ...children.path.getQueryParams(),
       ...children.body.getQueryParams(),
     ];
-    return toQueryView(params);
+    return (this.children.proxy.node() as AbstractNode<any>).evalCache.value.text.value ? toQueryView(params) : this.directHttp();
+  }
+
+  private directHttp() {
+    const headers = transformList((this.children.headers.node() as AbstractNode<any>).evalCache.value);
+    const httpMethod = this.children.httpMethod.getView();
+    const params = transformList((this.children.params.node() as AbstractNode<any>).evalCache.value);
+    const path = (this.children.path.node() as AbstractNode<any>).evalCache.value.text.value;
+    const body = (this.children.body.node() as AbstractNode<any>).evalCache.value.text.value;
+    const bodyFormData = transformList((this.children.bodyFormData.node() as AbstractNode<any>).evalCache.value);
+
+    return async () => {
+      try {
+        const response: AxiosResponse<JSONValue> = await axios({
+          method: httpMethod, url: path, data: body || bodyFormData, headers, params
+        });
+        return {
+          data: response.data, success: true, code: QUERY_EXECUTION_OK,
+        };
+      } catch (e) {
+        return {
+          success: false, data: "", code: QUERY_EXECUTION_ERROR, message: (e as any).message || "",
+        };
+      }
+    }
   }
 
   propertyView(props: {
@@ -147,6 +175,8 @@ const HttpQueryPropertyView = (props: {
 
   return (
     <>
+      <HttpProxyPropertyView {...props} comp={comp} />
+
       <Dropdown
         placement={"bottom"}
         value={children.httpMethod.value}

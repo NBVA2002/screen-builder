@@ -40,7 +40,7 @@ import {
 import { TriContainer } from "../triContainerComp/triContainer";
 import { traverseCompTree } from "../containerBase/utils";
 import { IForm } from "./formDataConstants";
-import { Spin } from "antd";
+import { default as Spin } from "antd/lib/spin";
 import { BoolControl } from "comps/controls/boolControl";
 import { BottomResTypeEnum } from "types/bottomRes";
 import { BoolCodeControl, JSONObjectControl } from "comps/controls/codeControl";
@@ -55,8 +55,20 @@ import {
 import { trans } from "i18n";
 import log from "loglevel";
 import { DisabledContext } from "comps/generators/uiCompBuilder";
-import { LoadingOutlined } from "@ant-design/icons";
-import { messageInstance } from "lowcoder-design";
+import { default as LoadingOutlined } from "@ant-design/icons/LoadingOutlined";
+import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
+import { styled } from "styled-components";
+import { AnimationStyle, styleControl } from "@lowcoder-ee/index.sdk";
+
+const FormWrapper = styled.div`
+  height: 100%;
+  .ant-spin-nested-loading {
+    height: 100%;
+    .ant-spin-container {
+      height: 100%;
+    }
+  }
+`;
 
 const eventOptions = [submitEvent] as const;
 
@@ -67,6 +79,7 @@ const childrenMap = {
   disableSubmit: BoolCodeControl,
   loading: BoolCodeControl,
   onEvent: eventHandlerControl(eventOptions),
+  animationStyle:styleControl(AnimationStyle)
 };
 
 type FormProps = TriContainerViewProps &
@@ -172,12 +185,18 @@ const FormBaseComp = (function () {
   return new ContainerCompBuilder(childrenMap, (props, dispatch) => {
     return (
       <DisabledContext.Provider value={props.disabled}>
-        <Spin indicator={loadingIcon} spinning={props.loading}>
-          <TriContainer
-            {...props}
-            hintPlaceholder={<BodyPlaceholder {...props} dispatch={dispatch} />}
-          />
-        </Spin>
+        <FormWrapper>
+          <Spin
+            indicator={loadingIcon}
+            spinning={props.loading}
+            style={{height: '100%'}}
+          >
+            <TriContainer
+              {...props}
+              hintPlaceholder={<BodyPlaceholder {...props} dispatch={dispatch} />}
+            />
+          </Spin>
+        </FormWrapper>
       </DisabledContext.Provider>
     );
   })
@@ -218,6 +237,24 @@ const FormBaseComp = (function () {
               <Section name={sectionNames.style}>
                 {children.container.stylePropertyView()}
               </Section>
+              <Section name={sectionNames.animationStyle} hasTooltip={true}>
+                {children.animationStyle.getPropertyView()}
+              </Section>
+              {children.container.children.showHeader.getView() && (
+                <Section name={"Header Style"}>
+                  { children.container.headerStylePropertyView() }
+                </Section>
+              )}
+              {children.container.children.showBody.getView() && (
+                <Section name={"Body Style"}>
+                  { children.container.bodyStylePropertyView() }
+                </Section>
+              )}
+              {children.container.children.showFooter.getView() && (
+                <Section name={"Footer Style"}>
+                  { children.container.footerStylePropertyView() }
+                </Section>
+              )}
             </>
           )}
           
