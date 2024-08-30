@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lowcoder-ce-api-service-svc
+  labels:
+    app: lowcoder-ce-api-service
+  namespace: cityos
+spec:
+  type: NodePort
+  ports:
+    - name: app
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 9191
+  selector:
+    app: lowcoder-ce-api-service

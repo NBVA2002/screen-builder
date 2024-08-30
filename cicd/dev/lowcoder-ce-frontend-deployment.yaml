@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lowcoder-ce-frontend
+  labels:
+    app: lowcoder-ce-frontend
+  namespace: cityos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lowcoder-ce-frontend
+  template:
+    metadata:
+      labels:
+        name: lowcoder-ce-frontend
+        app: lowcoder-ce-frontend
+    spec:
+      containers:
+        - name: lowcoder-ce-frontend
+          image: harbor.xrcommunity.org/cityos/lowcoder-ce-frontend:custom-0.1
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: PUID
+            value: "9001"
+          - name: PGID
+            value: "9001"
+          - name: LOWCODER_MAX_REQUEST_SIZE
+            value: "20m"
+          - name: LOWCODER_MAX_QUERY_TIMEOUT
+            value: "120"
+          - name: LOWCODER_API_SERVICE_URL
+            value: "http://lowcoder-ce-api-service-svc:8080"
+          - name: LOWCODER_NODE_SERVICE_URL
+            value: "http://lowcoder-ce-node-service-svc:6060"
+          ports:
+          - containerPort: 3000
+            protocol: TCP
+      restartPolicy: Always

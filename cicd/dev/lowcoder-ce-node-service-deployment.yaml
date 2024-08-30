@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lowcoder-ce-node-service
+  labels:
+    app: lowcoder-ce-node-service
+  namespace: cityos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lowcoder-ce-node-service
+  template:
+    metadata:
+      labels:
+        name: lowcoder-ce-node-service
+        app: lowcoder-ce-node-service
+    spec:
+      containers:
+        - name: lowcoder-ce-node-service
+          image: lowcoderorg/lowcoder-ce-node-service:latest
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: PUID
+            value: "9001"
+          - name: PGID
+            value: "9001"
+          - name: LOWCODER_API_SERVICE_URL
+            value: "http://lowcoder-ce-api-service-svc:8080"
+          ports:
+          - containerPort: 6060
+            protocol: TCP
+      restartPolicy: Always
